@@ -2,18 +2,19 @@ package age
 
 import (
 	"context"
+	"testing"
+
 	"github.com/brevis-network/brevis-sdk/sdk"
 	"github.com/brevis-network/brevis-sdk/test"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"testing"
 )
 
 func TestCircuit(t *testing.T) {
 	app, err := sdk.NewBrevisApp()
 	check(err)
-	ec, err := ethclient.Dial("")
+	ec, err := ethclient.Dial("https://eth.llamarpc.com")
 	check(err)
 
 	txHash := common.HexToHash(
