@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "brevis-sdk-typescript": "^1.2.0",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5",
+    "web3": "^4.9.0"
+  }
+}
