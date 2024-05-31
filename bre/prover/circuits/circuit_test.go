@@ -13,7 +13,7 @@ import (
 func TestCircuit(t *testing.T) {
 	app, err := sdk.NewBrevisApp()
 	check(err)
-	ec, err := ethclient.Dial("")
+	ec, err := ethclient.Dial("https://eth.llamarpc.com")
 	check(err)
 
 	txHash := common.HexToHash(
