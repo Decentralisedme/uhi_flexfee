@@ -30,8 +30,6 @@ var _ sdk.AppCircuit = &AppCircuit{}
 
 var EventIdSwap = sdk.ParseEventID(
 	hexutil.MustDecode("0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67"))
-var EventIdTransfer = sdk.ParseEventID(
-	hexutil.MustDecode("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"))
 
 var RouterAddress = sdk.ConstUint248(
 	common.HexToAddress("0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B"))
