@@ -10,15 +10,7 @@ import (
 
 // This example circuit analyzes the swap events between USDC and ETH/WETH for a user.
 
-// AppCircuit is a developer-defined circuit that performs checks and data analysis
-// over the input Receipt. The proof of this circuit is to be verified in Brevis
-// in conjunction with various data validity checks. A final proof is then
-// submitted on-chain and expose the output to the developer's contract.
-// The Brevis side ensures that all receipts
 type AppCircuit struct {
-	// You can define your own custom circuit inputs here, but note that they cannot
-	// have the `gnark:",public"` tag.
-	UserAddr sdk.Uint248
 }
 
 // Your guest circuit must implement the sdk.AppCircuit interface
@@ -30,8 +22,6 @@ var _ sdk.AppCircuit = &AppCircuit{}
 
 var EventIdSwap = sdk.ParseEventID(
 	hexutil.MustDecode("0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67"))
-var EventIdTransfer = sdk.ParseEventID(
-	hexutil.MustDecode("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"))
 
 var RouterAddress = sdk.ConstUint248(
 	common.HexToAddress("0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B"))
@@ -68,7 +58,7 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 			u248.IsEqual(l.Fields[0].EventID, EventIdSwap),
 			// Check the index of the fields are as expected
 			u248.IsZero(l.Fields[0].IsTopic),                     // `sqrtPriceX96` is not a topic field
-			u248.IsEqual(l.Fields[0].Index, sdk.ConstUint248(2)), // `sqrtPriceX96` is the 2nd data field in the `Swap` event
+			u248.IsEqual(l.Fields[0].Index, sdk.ConstUint248(2)), // `sqrtPriceX96` is the index 2 data field in the `Swap` event
 		)
 		return assertionPassed
 	})
