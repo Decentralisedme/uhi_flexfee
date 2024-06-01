@@ -1,5 +1,15 @@
 import { Brevis, ErrCode, ProofRequest, Prover, TransactionData, ReceiptData, Field } from 'brevis-sdk-typescript';
-import Web3, { Contract, ContractAbi } from 'web3';
+import Web3, { Contract, ContractAbi, EventLog } from 'web3';
+// import json
+// import UsdcWethV3ABI from '../ABI/usdcWethV3.json' assert { type: "json" };
+// import aaveV2LpABI from '../ABIs/liquidations/Ethereum/aaveV2LendingPool.json' assert { type: "json" };
+
+
+// import json file "../ABI/usdcWethV3.json"
+
+import { readFileSync } from 'fs';
+
+const USDC_WETH_V3_ABI = JSON.parse(readFileSync('../ABI/usdcWethV3.json', 'utf-8'));
 
 
 async function getSwapLogsFromBlock(blockNum: any){
@@ -14,20 +24,115 @@ async function getSwapLogsFromBlocks(contract: Contract<any>, startBlock: any, e
     return events;
 }
 
-async function getPreviousLogs(creationTX: any, contractAddress: any, abi: any, web3Provider: Web3) {
+function convertLogToReceiptData(log: EventLog) {
+
+    // console.log(log.topics[0])
+    // typecasting
+    const sqrtPriceX96 = log.returnValues.sqrtPriceX96 as BigInt;
+    // convert to string
+    const sqrtPriceX96Str = sqrtPriceX96.toString();
+
+    var logIndex;
+
+    // match type case of logIndex string or number or BigInt and make it number
+    if (typeof log.logIndex === 'string') {
+        logIndex = parseInt(log.logIndex);
+    } else if (typeof log.logIndex === 'number') {
+        logIndex = log.logIndex;
+    } else if (typeof log.logIndex === 'bigint') {
+        logIndex = Number(log.logIndex);
+    } else {
+        throw new Error('Invalid logIndex type');
+    }
+
+    var bln;
+
+    // match type case of block number string or number or BigInt and make it number
+    if (typeof log.blockNumber === 'string') {
+        bln = parseInt(log.blockNumber);
+    } else if (typeof log.blockNumber === 'number') {
+        bln = log.blockNumber;
+    } else if (typeof log.blockNumber === 'bigint') {
+        bln = Number(log.blockNumber);
+    } else {
+        throw new Error('Invalid block number type');
+    }
+
+
+    // create receipt data
+    const rD = new ReceiptData({
+        block_num:  bln,
+        tx_hash: log.transactionHash,
+        fields: [
+            new Field({
+                contract: log.address,
+                log_index: logIndex,
+                event_id: log.topics[0],
+                is_topic: false,
+                field_index: 2,
+                value: sqrtPriceX96Str,
+            }),               
+        ],
+    })
+
+    return rD;
+}
+
+async function getPreviousLogs(creationTX: any, contractAddress: any, abi: any, web3Provider: Web3, minLogNumber: number) {
     const contractInstance = new web3Provider.eth.Contract(abi, contractAddress);
 
-    const endBlock = await web3Provider.eth.getBlockNumber();
+    // some rpcs limit how many blocks you can explore
+    const maxBlockDiff = 10000;
+
+    // avoid some reorg or dropped txs (re-check this issue)
+    const endBlock = Number(await web3Provider.eth.getBlockNumber()) - 100;
+
+    // get the start block of this pool
     const receipt = await web3Provider.eth.getTransactionReceipt(creationTX);
-    const startBlock = receipt.blockNumber; // Use receipt.blockNumber for dynamic start block
+    const startBlock = Number(receipt.blockNumber); // Use receipt.blockNumber for dynamic start block
 
-    const logEventsList = [];
+    var logList = [];
+    
+    var receiptDataList = [];
 
-    var curStart = startBlock;
+    var curStart = endBlock - maxBlockDiff;
 
-    var logs = await getSwapLogsFromBlocks(contractInstance, Number(endBlock.toString()) - 4, endBlock);
+    var breakLogCollectionFlag = false;
 
-    console.log(logs)
+    // get logs until we have enough or run out of blocks
+    while (logList.length < minLogNumber) {
+
+        if (curStart <= startBlock) {
+            breakLogCollectionFlag = true;
+            curStart = startBlock;
+        }
+
+        var logs = await getSwapLogsFromBlocks(contractInstance, curStart, endBlock);
+        
+        curStart = curStart - maxBlockDiff;
+        for (var i = 0; i < logs.length; i++) {
+            var log = logs[i]
+            logList.push(log);
+        }
+
+        if (breakLogCollectionFlag) {
+            break;
+        }
+    }
+
+    logList = logList.filter((log) => {
+        let l = log as EventLog;
+        return l.topics[0] === '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67';
+    })
+
+    // convert logs
+    for (var i = 0; i < logList.length; i++) {
+        var log = logList[i]
+        var r = convertLogToReceiptData(log as EventLog)
+        receiptDataList.push(r);
+    }
+
+    return receiptDataList;
 }
 
 async function main() {
@@ -39,42 +144,64 @@ async function main() {
     // const tempWeb3Addr = new Web3("https://eth.llamarpc.com")
     // getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", ABI, tempWeb3Addr)
 
+    var receiptList = await getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", USDC_WETH_V3_ABI, web3, 1500)
+
+    console.log("got all receipts")
+
     const proofReq = new ProofRequest();
 
-    proofReq.addReceipt(
-        new ReceiptData({
-            block_num: 19996326,
-            tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
-            fields: [
-                new Field({
-                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-                    log_index: 12,
-                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-                    is_topic: false,
-                    field_index: 2,
-                    value: '1286977918479647748315046269489039',
-                }),               
-            ],
-        }), 0
-    );       
+    // work backwards on receiptList
 
-    proofReq.addReceipt(
-        new ReceiptData({
-            block_num: 19996331,
-            tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
-            fields: [
-                new Field({
-                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-                    log_index: 3,
-                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-                    is_topic: false,
-                    field_index: 2,
-                    value: '1286977918479647748315046269489039',
-                }),               
-            ],
-        }), 1
-    );      
+    for (var i = receiptList.length - 1; i >= 0 ; i--) {
+        var indexPos = (receiptList.length - i) - 1;
+        console.log("indexPos", indexPos)
+        // push
+        proofReq.addReceipt(receiptList[i], indexPos);
 
+        console.log("added receipt")
+
+        console.log("num receipts", proofReq.getReceipts().length)
+
+        if (proofReq.getReceipts().length >= 20) {
+            break;
+        }
+    }
+
+    // proofReq.addReceipt(
+    //     new ReceiptData({
+    //         block_num: 19996326,
+    //         tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
+    //         fields: [
+    //             new Field({
+    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+    //                 log_index: 12,
+    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+    //                 is_topic: false,
+    //                 field_index: 2,
+    //                 value: '1286977918479647748315046269489039',
+    //             }),               
+    //         ],
+    //     }), 0
+    // );       
+
+    // proofReq.addReceipt(
+    //     new ReceiptData({
+    //         block_num: 19996331,
+    //         tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
+    //         fields: [
+    //             new Field({
+    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+    //                 log_index: 3,
+    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+    //                 is_topic: false,
+    //                 field_index: 2,
+    //                 value: '1286977918479647748315046269489039',
+    //             }),               
+    //         ],
+    //     }), 1
+    // );      
+
+    console.log("going to prove")
 
     const proofRes = await prover.prove(proofReq);
 
@@ -112,7 +239,3 @@ async function main() {
 
 main();
 
-const ABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"int24","name":"tickLower","type":"int24"},{"indexed":true,"internalType":"int24","name":"tickUpper","type":"int24"},{"indexed":false,"internalType":"uint128","name":"amount","type":"uint128"},{"indexed":false,"internalType":"uint256","name":"amount0","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount1","type":"uint256"}],"name":"Burn","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"address","name":"recipient","type":"address"},{"indexed":true,"internalType":"int24","name":"tickLower","type":"int24"},{"indexed":true,"internalType":"int24","name":"tickUpper","type":"int24"},{"indexed":false,"internalType":"uint128","name":"amount0","type":"uint128"},{"indexed":false,"internalType":"uint128","name":"amount1","type":"uint128"}],"name":"Collect","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":true,"internalType":"address","name":"recipient","type":"address"},{"indexed":false,"internalType":"uint128","name":"amount0","type":"uint128"},{"indexed":false,"internalType":"uint128","name":"amount1","type":"uint128"}],"name":"CollectProtocol","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":true,"internalType":"address","name":"recipient","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount0","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount1","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paid0","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"paid1","type":"uint256"}],"name":"Flash","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint16","name":"observationCardinalityNextOld","type":"uint16"},{"indexed":false,"internalType":"uint16","name":"observationCardinalityNextNew","type":"uint16"}],"name":"IncreaseObservationCardinalityNext","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint160","name":"sqrtPriceX96","type":"uint160"},{"indexed":false,"internalType":"int24","name":"tick","type":"int24"}],"name":"Initialize","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"sender","type":"address"},{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"int24","name":"tickLower","type":"int24"},{"indexed":true,"internalType":"int24","name":"tickUpper","type":"int24"},{"indexed":false,"internalType":"uint128","name":"amount","type":"uint128"},{"indexed":false,"internalType":"uint256","name":"amount0","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"amount1","type":"uint256"}],"name":"Mint","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"feeProtocol0Old","type":"uint8"},{"indexed":false,"internalType":"uint8","name":"feeProtocol1Old","type":"uint8"},{"indexed":false,"internalType":"uint8","name":"feeProtocol0New","type":"uint8"},{"indexed":false,"internalType":"uint8","name":"feeProtocol1New","type":"uint8"}],"name":"SetFeeProtocol","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":true,"internalType":"address","name":"recipient","type":"address"},{"indexed":false,"internalType":"int256","name":"amount0","type":"int256"},{"indexed":false,"internalType":"int256","name":"amount1","type":"int256"},{"indexed":false,"internalType":"uint160","name":"sqrtPriceX96","type":"uint160"},{"indexed":false,"internalType":"uint128","name":"liquidity","type":"uint128"},{"indexed":false,"internalType":"int24","name":"tick","type":"int24"}],"name":"Swap","type":"event"},{"inputs":[{"internalType":"int24","name":"tickLower","type":"int24"},{"internalType":"int24","name":"tickUpper","type":"int24"},{"internalType":"uint128","name":"amount","type":"uint128"}],"name":"burn","outputs":[{"internalType":"uint256","name":"amount0","type":"uint256"},{"internalType":"uint256","name":"amount1","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"int24","name":"tickLower","type":"int24"},{"internalType":"int24","name":"tickUpper","type":"int24"},{"internalType":"uint128","name":"amount0Requested","type":"uint128"},{"internalType":"uint128","name":"amount1Requested","type":"uint128"}],"name":"collect","outputs":[{"internalType":"uint128","name":"amount0","type":"uint128"},{"internalType":"uint128","name":"amount1","type":"uint128"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint128","name":"amount0Requested","type":"uint128"},{"internalType":"uint128","name":"amount1Requested","type":"uint128"}],"name":"collectProtocol","outputs":[{"internalType":"uint128","name":"amount0","type":"uint128"},{"internalType":"uint128","name":"amount1","type":"uint128"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"factory","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"fee","outputs":[{"internalType":"uint24","name":"","type":"uint24"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"feeGrowthGlobal0X128","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"feeGrowthGlobal1X128","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount0","type":"uint256"},{"internalType":"uint256","name":"amount1","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"flash","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint16","name":"observationCardinalityNext","type":"uint16"}],"name":"increaseObservationCardinalityNext","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint160","name":"sqrtPriceX96","type":"uint160"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"liquidity","outputs":[{"internalType":"uint128","name":"","type":"uint128"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"maxLiquidityPerTick","outputs":[{"internalType":"uint128","name":"","type":"uint128"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"int24","name":"tickLower","type":"int24"},{"internalType":"int24","name":"tickUpper","type":"int24"},{"internalType":"uint128","name":"amount","type":"uint128"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"mint","outputs":[{"internalType":"uint256","name":"amount0","type":"uint256"},{"internalType":"uint256","name":"amount1","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"observations","outputs":[{"internalType":"uint32","name":"blockTimestamp","type":"uint32"},{"internalType":"int56","name":"tickCumulative","type":"int56"},{"internalType":"uint160","name":"secondsPerLiquidityCumulativeX128","type":"uint160"},{"internalType":"bool","name":"initialized","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint32[]","name":"secondsAgos","type":"uint32[]"}],"name":"observe","outputs":[{"internalType":"int56[]","name":"tickCumulatives","type":"int56[]"},{"internalType":"uint160[]","name":"secondsPerLiquidityCumulativeX128s","type":"uint160[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"positions","outputs":[{"internalType":"uint128","name":"liquidity","type":"uint128"},{"internalType":"uint256","name":"feeGrowthInside0LastX128","type":"uint256"},{"internalType":"uint256","name":"feeGrowthInside1LastX128","type":"uint256"},{"internalType":"uint128","name":"tokensOwed0","type":"uint128"},{"internalType":"uint128","name":"tokensOwed1","type":"uint128"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"protocolFees","outputs":[{"internalType":"uint128","name":"token0","type":"uint128"},{"internalType":"uint128","name":"token1","type":"uint128"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint8","name":"feeProtocol0","type":"uint8"},{"internalType":"uint8","name":"feeProtocol1","type":"uint8"}],"name":"setFeeProtocol","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"slot0","outputs":[{"internalType":"uint160","name":"sqrtPriceX96","type":"uint160"},{"internalType":"int24","name":"tick","type":"int24"},{"internalType":"uint16","name":"observationIndex","type":"uint16"},{"internalType":"uint16","name":"observationCardinality","type":"uint16"},{"internalType":"uint16","name":"observationCardinalityNext","type":"uint16"},{"internalType":"uint8","name":"feeProtocol","type":"uint8"},{"internalType":"bool","name":"unlocked","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"int24","name":"tickLower","type":"int24"},{"internalType":"int24","name":"tickUpper","type":"int24"}],"name":"snapshotCumulativesInside","outputs":[{"internalType":"int56","name":"tickCumulativeInside","type":"int56"},{"internalType":"uint160","name":"secondsPerLiquidityInsideX128","type":"uint160"},{"internalType":"uint32","name":"secondsInside","type":"uint32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"bool","name":"zeroForOne","type":"bool"},{"internalType":"int256","name":"amountSpecified","type":"int256"},{"internalType":"uint160","name":"sqrtPriceLimitX96","type":"uint160"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"swap","outputs":[{"internalType":"int256","name":"amount0","type":"int256"},{"internalType":"int256","name":"amount1","type":"int256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"int16","name":"","type":"int16"}],"name":"tickBitmap","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"tickSpacing","outputs":[{"internalType":"int24","name":"","type":"int24"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"int24","name":"","type":"int24"}],"name":"ticks","outputs":[{"internalType":"uint128","name":"liquidityGross","type":"uint128"},{"internalType":"int128","name":"liquidityNet","type":"int128"},{"internalType":"uint256","name":"feeGrowthOutside0X128","type":"uint256"},{"internalType":"uint256","name":"feeGrowthOutside1X128","type":"uint256"},{"internalType":"int56","name":"tickCumulativeOutside","type":"int56"},{"internalType":"uint160","name":"secondsPerLiquidityOutsideX128","type":"uint160"},{"internalType":"uint32","name":"secondsOutside","type":"uint32"},{"internalType":"bool","name":"initialized","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"token1","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]
-
-// const tempWeb3Addr = new Web3("https://eth.llamarpc.com")
-// getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", ABI, tempWeb3Addr)
