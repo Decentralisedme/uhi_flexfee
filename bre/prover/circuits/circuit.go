@@ -1,6 +1,8 @@
 package volatility
 
 import (
+	"fmt"
+
 	"github.com/brevis-network/brevis-sdk/sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -36,6 +38,8 @@ var RouterAddress = sdk.ConstUint248(
 var UsdcPoolAddress = sdk.ConstUint248(
 	common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"))
 
+var twoPower96 = sdk.ConstUint248("79228162514264337593543950336")
+
 func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// Allocating regions for different source data. Here, we are allocating 5 data
 	// slots for "receipt" data, and none for other data types. Please note that if
@@ -58,36 +62,47 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	// should return 1 if assertion successes and 0 otherwise
 	sdk.AssertEach(receipts, func(l sdk.Receipt) sdk.Uint248 {
 		assertionPassed := u248.And(
-			// 2. Check that the contract address of each log field is the expected contract
+			// Check that the contract address of each log field is the expected contract
 			u248.IsEqual(l.Fields[0].Contract, UsdcPoolAddress),
-			// 3. Check the EventID of the fields are as expected
+			// Check the EventID of the fields are as expected
 			u248.IsEqual(l.Fields[0].EventID, EventIdSwap),
-			// 4. Check the index of the fields are as expected
+			// Check the index of the fields are as expected
 			u248.IsZero(l.Fields[0].IsTopic),                     // `sqrtPriceX96` is not a topic field
 			u248.IsEqual(l.Fields[0].Index, sdk.ConstUint248(2)), // `sqrtPriceX96` is the 2nd data field in the `Swap` event
 		)
 		return assertionPassed
 	})
 
-	blockNums := sdk.Map(receipts, func(cur sdk.Receipt) sdk.Uint248 { return cur.BlockNum })
-
-	volumes := sdk.Map(receipts, func(cur sdk.Receipt) sdk.Uint248 {
-		valInt := api.ToInt248(cur.Fields[0].Value)
-		return api.Int248.ABS(valInt)
+	sqrtPriceX96s := sdk.Map(receipts, func(receipt sdk.Receipt) sdk.Uint248 {
+		return api.ToUint248(receipt.Fields[0].Value)
 	})
 
-	// Find out the minimum block number. This enables us to find out over what range
-	// the user has a specific trading volume
-	minBlockNum := sdk.Min(blockNums)
+	// convert sqrtPriceX96 to price
+	// price = (sqrtPriceX96 / (2 ^ 96)) ^ 2
+	prices := sdk.Map(sqrtPriceX96s, func(sqrtPriceX96 sdk.Uint248) sdk.Uint248 {
+		i, _ := u248.Div(sqrtPriceX96, twoPower96)
+		return u248.Mul(i, i)
+	})
 
-	// Sum up the volume of each trade
-	sumVolume := sdk.Sum(volumes)
+	mean := sdk.Mean(prices)
+
+	sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
+		variance := u248.Sub(price, mean)
+		return u248.Mul(variance, variance)
+	})
+
+	sum_variance := sdk.Mean(sqrd_variance)
+
+	sum_div_cnt, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)))
+	vol := u248.Sqrt(sum_div_cnt)
+
+	fmt.Println("vol:")
+	fmt.Println(vol)
 
 	// Output will be reflected in app contract's callback in the form of
 	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
 	// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
-	api.OutputUint(248, sumVolume)
-	api.OutputUint(64, minBlockNum)
+	api.OutputUint(248, mean)
 
 	return nil
 }
