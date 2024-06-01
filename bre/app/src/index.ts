@@ -44,7 +44,7 @@ async function main() {
     proofReq.addReceipt(
         new ReceiptData({
             block_num: 19996326,
-            tx_hash: '0x53b37ec7975d217295f4bdadf8043b261fc49dccc16da9b9fc8b9530845a5794',
+            tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
             fields: [
                 new Field({
                     contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
@@ -57,6 +57,23 @@ async function main() {
             ],
         }), 0
     );       
+
+    proofReq.addReceipt(
+        new ReceiptData({
+            block_num: 19996331,
+            tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
+            fields: [
+                new Field({
+                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+                    log_index: 3,
+                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+                    is_topic: false,
+                    field_index: 2,
+                    value: '1286977918479647748315046269489039',
+                }),               
+            ],
+        }), 1
+    );      
 
 
     const proofRes = await prover.prove(proofReq);
