@@ -35,10 +35,6 @@ var RouterAddress = sdk.ConstUint248(
 	common.HexToAddress("0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B"))
 var UsdcPoolAddress = sdk.ConstUint248(
 	common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"))
-var UsdcAddress = sdk.ConstUint248(
-	common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"))
-var Salt = sdk.ConstBytes32(
-	hexutil.MustDecode("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"))
 
 func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// Allocating regions for different source data. Here, we are allocating 5 data
@@ -47,7 +43,7 @@ func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// always have 5 processing "chips" for receipts and none for others. It means
 	// your compiled circuit will always be only able to process up to 5 receipts and
 	// cannot process other types unless you change the allocations and recompile.
-	return 5, 0, 0
+	return 100, 0, 0
 }
 
 func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
@@ -61,34 +57,14 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	// Main application logic: Run the assert function on each receipt. The function
 	// should return 1 if assertion successes and 0 otherwise
 	sdk.AssertEach(receipts, func(l sdk.Receipt) sdk.Uint248 {
-		// If the recipient field of the Swap event is uniswap router, it means the user
-		// requested native token out. We need to instead check the user's address in the
-		// Transfer event emitted by USDC contract
-		recipientIsRouter := u248.IsEqual(api.ToUint248(l.Fields[1].Value), RouterAddress)
-		// the following line translates to "if recipient is router, then use `from` as
-		// userAddr, else use `recipient`"
-		userAddr := u248.Select(
-			recipientIsRouter, api.ToUint248(l.Fields[2].Value), api.ToUint248(l.Fields[1].Value))
-		// asserts that the following equality checks each results in 1
 		assertionPassed := u248.And(
-			// 1. Check that the user address related to the swaps is consistent across all
-			// receipts
-			u248.IsEqual(userAddr, c.UserAddr),
 			// 2. Check that the contract address of each log field is the expected contract
 			u248.IsEqual(l.Fields[0].Contract, UsdcPoolAddress),
-			u248.IsEqual(l.Fields[1].Contract, UsdcPoolAddress),
-			u248.IsEqual(l.Fields[2].Contract, UsdcAddress),
 			// 3. Check the EventID of the fields are as expected
 			u248.IsEqual(l.Fields[0].EventID, EventIdSwap),
-			u248.IsEqual(l.Fields[1].EventID, EventIdSwap),
-			u248.IsEqual(l.Fields[2].EventID, EventIdTransfer),
 			// 4. Check the index of the fields are as expected
-			u248.IsZero(l.Fields[0].IsTopic),                     // `amount0` is not a topic field
-			u248.IsEqual(l.Fields[0].Index, sdk.ConstUint248(0)), // `amount0` is the 0th data field in the `Swap` event
-			l.Fields[1].IsTopic,                                  // `recipient` is a topic field
-			u248.IsEqual(l.Fields[1].Index, sdk.ConstUint248(2)), // `recipient` is the 2nd topic field in the `Swap` event
-			l.Fields[2].IsTopic,                                  // `from` is a topic field
-			u248.IsEqual(l.Fields[2].Index, sdk.ConstUint248(1)), // `from` is the 1st index field in the `Transfer` event
+			u248.IsZero(l.Fields[0].IsTopic),                     // `sqrtPriceX96` is not a topic field
+			u248.IsEqual(l.Fields[0].Index, sdk.ConstUint248(2)), // `sqrtPriceX96` is the 2nd data field in the `Swap` event
 		)
 		return assertionPassed
 	})
@@ -110,10 +86,8 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	// Output will be reflected in app contract's callback in the form of
 	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
 	// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
-	api.OutputBytes32(Salt)
 	api.OutputUint(248, sumVolume)
 	api.OutputUint(64, minBlockNum)
-	api.OutputAddress(c.UserAddr)
 
 	return nil
 }

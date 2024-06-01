@@ -17,27 +17,41 @@ func TestCircuit(t *testing.T) {
 	check(err)
 
 	usdcPool := common.HexToAddress("0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640")
-	usdc := common.HexToAddress("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
 	swapEvent := common.HexToHash("0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67")
-	amount0 := common.BytesToHash(big.NewInt(724999999).Bytes())
-	recipient := common.HexToHash("0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B")
-	transferEvent := common.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef")
-	from := common.HexToHash("0xaefB31e9EEee2822f4C1cBC13B70948b0B5C0b3c")
+
+	var num, _ = new(big.Int).SetString("1286977918479647748315046269489039", 10)
+	sqrtPriceX96_1 := common.BytesToHash(big.NewInt(num.Int64()).Bytes())
 
 	// Adding a receipt query into the querier
-	// In this tx, the user sold USDC and took native ETH out
 	app.AddReceipt(sdk.ReceiptData{
-		BlockNum: big.NewInt(18064070),
-		TxHash:   common.HexToHash("53b37ec7975d217295f4bdadf8043b261fc49dccc16da9b9fc8b9530845a5794"),
+		BlockNum: big.NewInt(19996326),
+		TxHash:   common.HexToHash("0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac"),
 		Fields: [sdk.NumMaxLogFields]sdk.LogFieldData{
-			{Contract: usdcPool, LogIndex: 3, EventID: swapEvent, IsTopic: false, FieldIndex: 0, Value: amount0},  // field: USDCPool.Swap.amount0
-			{Contract: usdcPool, LogIndex: 3, EventID: swapEvent, IsTopic: true, FieldIndex: 2, Value: recipient}, // field: USDCPool.Swap.recipient (topic field)
-			{Contract: usdc, LogIndex: 2, EventID: transferEvent, IsTopic: true, FieldIndex: 1, Value: from},      // field: USDC.Transfer.from
+			{Contract: usdcPool, LogIndex: 12, EventID: swapEvent, IsTopic: false, FieldIndex: 2, Value: sqrtPriceX96_1}, // field: USDCPool.Swap.sqrtPriceX96
 		},
 	})
-	// More receipts can be added, but in this example we only add one to keep it simple
-	// app.AddReceipt(...)
-	// app.AddReceipt(...)
+
+	num, _ = new(big.Int).SetString("1286977918479647748315046269489039", 10)
+	sqrtPriceX96_2 := common.BytesToHash(big.NewInt(num.Int64()).Bytes())
+
+	app.AddReceipt(sdk.ReceiptData{
+		BlockNum: big.NewInt(19996331),
+		TxHash:   common.HexToHash("0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027"),
+		Fields: [sdk.NumMaxLogFields]sdk.LogFieldData{
+			{Contract: usdcPool, LogIndex: 3, EventID: swapEvent, IsTopic: false, FieldIndex: 2, Value: sqrtPriceX96_2}, // field: USDCPool.Swap.sqrtPriceX96
+		},
+	})
+
+	num, _ = new(big.Int).SetString("1286980030786437829223832265541310", 10)
+	sqrtPriceX96_3 := common.BytesToHash(big.NewInt(num.Int64()).Bytes())
+
+	app.AddReceipt(sdk.ReceiptData{
+		BlockNum: big.NewInt(19996331),
+		TxHash:   common.HexToHash("0x4da85fde8c012f8fd6847e86e7114bc3c65731f315ee20abbf6c3b2f798439a7"),
+		Fields: [sdk.NumMaxLogFields]sdk.LogFieldData{
+			{Contract: usdcPool, LogIndex: 3, EventID: swapEvent, IsTopic: false, FieldIndex: 2, Value: sqrtPriceX96_3}, // field: USDCPool.Swap.sqrtPriceX96
+		},
+	})
 
 	// Initialize our AppCircuit and prepare the circuit assignment
 	appCircuit := &AppCircuit{
