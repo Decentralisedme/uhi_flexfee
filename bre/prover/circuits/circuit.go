@@ -47,7 +47,7 @@ func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// always have 5 processing "chips" for receipts and none for others. It means
 	// your compiled circuit will always be only able to process up to 5 receipts and
 	// cannot process other types unless you change the allocations and recompile.
-	return 100, 0, 0
+	return 3, 0, 0
 }
 
 func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
@@ -93,8 +93,8 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 
 	sum_variance := sdk.Mean(sqrd_variance)
 
-	sum_div_cnt, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)))
-	vol := u248.Sqrt(sum_div_cnt)
+	mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
+	vol := u248.Sqrt(mean_var)
 
 	fmt.Println("vol:")
 	fmt.Println(vol)
