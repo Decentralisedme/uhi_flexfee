@@ -162,7 +162,7 @@ async function main() {
 
         console.log("num receipts", proofReq.getReceipts().length)
 
-        if (proofReq.getReceipts().length >= 20) {
+        if (proofReq.getReceipts().length >= 2) {
             break;
         }
     }
