@@ -1,15 +1,11 @@
 import { Brevis, ErrCode, ProofRequest, Prover, TransactionData, ReceiptData, Field } from 'brevis-sdk-typescript';
 import Web3, { Contract, ContractAbi, EventLog } from 'web3';
-// import json
-// import UsdcWethV3ABI from '../ABI/usdcWethV3.json' assert { type: "json" };
-// import aaveV2LpABI from '../ABIs/liquidations/Ethereum/aaveV2LendingPool.json' assert { type: "json" };
-
-
-// import json file "../ABI/usdcWethV3.json"
-
 import { readFileSync } from 'fs';
 
-const USDC_WETH_V3_ABI = JSON.parse(readFileSync('../ABI/usdcWethV3.json', 'utf-8'));
+
+const rootBrevisDirectory = __dirname.split('/').slice(0, -1).join('/')
+
+const USDC_WETH_V3_ABI = JSON.parse(readFileSync(rootBrevisDirectory + '/ABI/usdcWethV3.json', 'utf-8'));
 
 
 async function getSwapLogsFromBlock(blockNum: any){
@@ -82,10 +78,10 @@ async function getPreviousLogs(creationTX: any, contractAddress: any, abi: any, 
     const contractInstance = new web3Provider.eth.Contract(abi, contractAddress);
 
     // some rpcs limit how many blocks you can explore
-    const maxBlockDiff = 10000;
+    const maxBlockDiff = 100;
 
     // avoid some reorg or dropped txs (re-check this issue)
-    const endBlock = Number(await web3Provider.eth.getBlockNumber()) - 100;
+    const endBlock = Number(await web3Provider.eth.getBlockNumber()) - 30000;
 
     // get the start block of this pool
     const receipt = await web3Provider.eth.getTransactionReceipt(creationTX);
@@ -111,19 +107,16 @@ async function getPreviousLogs(creationTX: any, contractAddress: any, abi: any, 
         
         curStart = curStart - maxBlockDiff;
         for (var i = 0; i < logs.length; i++) {
-            var log = logs[i]
-            logList.push(log);
+            var log = logs[i] as EventLog
+            if (log.topics[0] === '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67') {
+                logList.push(log);
+            }
         }
 
         if (breakLogCollectionFlag) {
             break;
         }
     }
-
-    logList = logList.filter((log) => {
-        let l = log as EventLog;
-        return l.topics[0] === '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67';
-    })
 
     // convert logs
     for (var i = 0; i < logList.length; i++) {
@@ -144,68 +137,70 @@ async function main() {
     // const tempWeb3Addr = new Web3("https://eth.llamarpc.com")
     // getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", ABI, tempWeb3Addr)
 
-    var receiptList = await getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", USDC_WETH_V3_ABI, web3, 1500)
+    // var receiptList = await getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", USDC_WETH_V3_ABI, web3, 1500)
 
-    console.log("got all receipts")
+    // console.log("got all receipts")
 
     const proofReq = new ProofRequest();
 
-    // work backwards on receiptList
+    // // work backwards on receiptList
 
-    for (var i = receiptList.length - 1; i >= 0 ; i--) {
-        var indexPos = (receiptList.length - i) - 1;
-        console.log("indexPos", indexPos)
-        // push
-        proofReq.addReceipt(receiptList[i], indexPos);
+    // for (var i = receiptList.length - 1; i >= 0 ; i--) {
+    //     var indexPos = (receiptList.length - i) - 1;
+    //     console.log("indexPos", indexPos)
+    //     // push
+    //     proofReq.addReceipt(receiptList[i], indexPos);
 
-        console.log("added receipt")
+    //     console.log(JSON.stringify(receiptList[i], null, 2))
 
-        console.log("num receipts", proofReq.getReceipts().length)
+    //     console.log("added receipt")
 
-        if (proofReq.getReceipts().length >= 2) {
-            break;
-        }
-    }
+    //     console.log("num receipts", proofReq.getReceipts().length)
 
-    // proofReq.addReceipt(
-    //     new ReceiptData({
-    //         block_num: 19996326,
-    //         tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
-    //         fields: [
-    //             new Field({
-    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-    //                 log_index: 12,
-    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-    //                 is_topic: false,
-    //                 field_index: 2,
-    //                 value: '1286977918479647748315046269489039',
-    //             }),               
-    //         ],
-    //     }), 0
-    // );       
+    //     if (proofReq.getReceipts().length >= 2) {
+    //         break;
+    //     }
+    // }
 
-    // proofReq.addReceipt(
-    //     new ReceiptData({
-    //         block_num: 19996331,
-    //         tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
-    //         fields: [
-    //             new Field({
-    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-    //                 log_index: 3,
-    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-    //                 is_topic: false,
-    //                 field_index: 2,
-    //                 value: '1286977918479647748315046269489039',
-    //             }),               
-    //         ],
-    //     }), 1
-    // );      
+    proofReq.addReceipt(
+        new ReceiptData({
+            block_num: 19996326,
+            tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
+            fields: [
+                new Field({
+                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+                    log_index: 12,
+                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+                    is_topic: false,
+                    field_index: 2,
+                    value: '1286977918479647748315046269489039',
+                }),               
+            ],
+        }), 0
+    );       
+
+    proofReq.addReceipt(
+        new ReceiptData({
+            block_num: 19996331,
+            tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
+            fields: [
+                new Field({
+                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+                    log_index: 3,
+                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+                    is_topic: false,
+                    field_index: 2,
+                    value: '1288977918479647748315046269489039',
+                }),               
+            ],
+        }), 1
+    );      
 
     console.log("going to prove")
 
     const proofRes = await prover.prove(proofReq);
 
-    console.log(proofRes)
+    // console.log(proofRes)
 
     // error handling
     if (proofRes.has_err) {
@@ -227,14 +222,17 @@ async function main() {
     }
     console.log('proof', proofRes.proof);
 
-    // try {
-    //     const brevisRes = await brevis.submit(proofReq, proofRes, 1, 11155111);
-    //     console.log('brevis res', brevisRes);
+    console.log("\n\ngoing to go submit\n\n")
 
-    //     await brevis.wait(brevisRes.brevisId, 11155111);
-    // } catch (err) {
-    //     console.error(err);
-    // }
+    try {
+
+        const brevisRes = await brevis.submit(proofReq, proofRes, 1, 11155111);
+        console.log('brevis res', brevisRes);
+
+        await brevis.wait(brevisRes.id, 11155111);
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 main();

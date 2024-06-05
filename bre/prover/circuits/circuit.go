@@ -6,6 +6,7 @@ import (
 	"github.com/brevis-network/brevis-sdk/sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"strconv"
 )
 
 // This example circuit analyzes the swap events between USDC and ETH/WETH for a user.
@@ -29,6 +30,7 @@ var UsdcPoolAddress = sdk.ConstUint248(
 	common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"))
 
 var twoPower96 = sdk.ConstUint248("79228162514264337593543950336")
+var zeroU248 = sdk.ConstUint248(0)
 
 func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// Allocating regions for different source data. Here, we are allocating 5 data
@@ -37,8 +39,34 @@ func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// always have 5 processing "chips" for receipts and none for others. It means
 	// your compiled circuit will always be only able to process up to 5 receipts and
 	// cannot process other types unless you change the allocations and recompile.
-	return 3, 0, 0
+	return 2, 0, 0
 }
+
+func toBoolean(val sdk.Uint248, api *sdk.CircuitAPI) bool {
+	bin := api.Uint248.ToBinary(val, 1).Values()
+	var x = bin[0]
+	var sss = fmt.Sprintf("%v", x)
+
+	if sss == "0" {
+		return false
+	} else {
+		return true
+	}
+
+}
+
+func absDiff(api *sdk.CircuitAPI, a, b sdk.Uint248) sdk.Uint248 {
+	u248 := api.Uint248
+
+	aLessThanB := u248.IsLessThan(a, b)
+	cond := toBoolean(aLessThanB, api)
+
+	if cond {
+		return u248.Sub(b, a)
+	}
+	return u248.Sub(a, b)
+}
+
 
 func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	u248 := api.Uint248
@@ -74,25 +102,73 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 		return u248.Mul(i, i)
 	})
 
-	mean := sdk.Mean(prices)
+	countString := fmt.Sprintf("%d", sdk.Count(prices).Val)
+	count, _ := strconv.Atoi(countString)
+	
+	var mean sdk.Uint248
 
-	sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
-		variance := u248.Sub(price, mean)
-		return u248.Mul(variance, variance)
-	})
+	if count > 1 {
+		emptyList := make([]sdk.Uint248, 0)
 
-	sum_variance := sdk.Mean(sqrd_variance)
+		headRemovedPrice := sdk.RangeUnderlying(prices, 1, count)
 
-	mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
-	vol := u248.Sqrt(mean_var)
+		lastRemovedPrice := sdk.RangeUnderlying(prices, 0, count-1)
 
-	fmt.Println("vol:")
-	fmt.Println(vol)
+		sdk.Map(headRemovedPrice, func(price sdk.Uint248) sdk.Uint248 {
+			emptyList = append(emptyList, price)
+			return price
+		})
+			
 
-	// Output will be reflected in app contract's callback in the form of
-	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
-	// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
-	api.OutputUint(248, mean)
+		returns := sdk.ZipMap2(lastRemovedPrice, emptyList, func(a, b sdk.Uint248) sdk.Uint248 {
+			return absDiff(api, a, b)
+		})
+
+		fmt.Println("returns:")
+		returns.Show()
+
+		mean = sdk.Mean(returns)
+
+		sqrd_variance := sdk.Map(returns, func(_return sdk.Uint248) sdk.Uint248 {
+			variance := u248.Sub(_return, mean)
+			return u248.Mul(variance, variance)
+		})
+
+		sum_variance := sdk.Mean(sqrd_variance)
+
+		mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
+		vol := u248.Sqrt(mean_var)
+
+		fmt.Println("vol return path:")
+		fmt.Println(vol)
+
+		api.OutputUint(248, mean)
+
+
+	} else {
+		mean = sdk.Mean(prices)
+	
+
+		sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
+			variance := u248.Sub(price, mean)
+			return u248.Mul(variance, variance)
+		})
+
+		sum_variance := sdk.Mean(sqrd_variance)
+
+		mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
+		vol := u248.Sqrt(mean_var)
+
+		fmt.Println("vol price path:")
+		fmt.Println(vol)
+
+		// Output will be reflected in app contract's callback in the form of
+		// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
+		// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
+		api.OutputUint(248, mean)
+
+	}
+	
 
 	return nil
 }
