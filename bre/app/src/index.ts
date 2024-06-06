@@ -81,7 +81,7 @@ async function getPreviousLogs(creationTX: any, contractAddress: any, abi: any, 
     const maxBlockDiff = 100;
 
     // avoid some reorg or dropped txs (re-check this issue)
-    const endBlock = Number(await web3Provider.eth.getBlockNumber()) - 30000;
+    const endBlock = 19308800 // Number(await web3Provider.eth.getBlockNumber()) - 30000;
 
     // get the start block of this pool
     const receipt = await web3Provider.eth.getTransactionReceipt(creationTX);
@@ -137,7 +137,7 @@ async function main() {
     // const tempWeb3Addr = new Web3("https://eth.llamarpc.com")
     // getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", ABI, tempWeb3Addr)
 
-    // var receiptList = await getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", USDC_WETH_V3_ABI, web3, 1500)
+    var receiptList = await getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", USDC_WETH_V3_ABI, web3, 1500)
 
     // console.log("got all receipts")
 
@@ -145,56 +145,56 @@ async function main() {
 
     // // work backwards on receiptList
 
-    // for (var i = receiptList.length - 1; i >= 0 ; i--) {
-    //     var indexPos = (receiptList.length - i) - 1;
-    //     console.log("indexPos", indexPos)
-    //     // push
-    //     proofReq.addReceipt(receiptList[i], indexPos);
+    for (var i = receiptList.length - 1; i >= 0 ; i--) {
+        var indexPos = (receiptList.length - i) - 1;
+        console.log("indexPos", indexPos)
+        // push
+        proofReq.addReceipt(receiptList[i], indexPos);
 
-    //     console.log(JSON.stringify(receiptList[i], null, 2))
+        console.log(JSON.stringify(receiptList[i], null, 2))
 
-    //     console.log("added receipt")
+        console.log("added receipt")
 
-    //     console.log("num receipts", proofReq.getReceipts().length)
+        console.log("num receipts", proofReq.getReceipts().length)
 
-    //     if (proofReq.getReceipts().length >= 2) {
-    //         break;
-    //     }
-    // }
+        if (proofReq.getReceipts().length >= 2) {
+            break;
+        }
+    }
 
-    proofReq.addReceipt(
-        new ReceiptData({
-            block_num: 19996326,
-            tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
-            fields: [
-                new Field({
-                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-                    log_index: 12,
-                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-                    is_topic: false,
-                    field_index: 2,
-                    value: '1286977918479647748315046269489039',
-                }),               
-            ],
-        }), 0
-    );       
+    // proofReq.addReceipt(
+    //     new ReceiptData({
+    //         block_num: 19996326,
+    //         tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
+    //         fields: [
+    //             new Field({
+    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+    //                 log_index: 12,
+    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+    //                 is_topic: false,
+    //                 field_index: 2,
+    //                 value: '1286977918479647748315046269489039',
+    //             }),               
+    //         ],
+    //     }), 0
+    // );       
 
-    proofReq.addReceipt(
-        new ReceiptData({
-            block_num: 19996331,
-            tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
-            fields: [
-                new Field({
-                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-                    log_index: 3,
-                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-                    is_topic: false,
-                    field_index: 2,
-                    value: '1288977918479647748315046269489039',
-                }),               
-            ],
-        }), 1
-    );      
+    // proofReq.addReceipt(
+    //     new ReceiptData({
+    //         block_num: 19996331,
+    //         tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
+    //         fields: [
+    //             new Field({
+    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+    //                 log_index: 3,
+    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+    //                 is_topic: false,
+    //                 field_index: 2,
+    //                 value: '1288977918479647748315046269489039',
+    //             }),               
+    //         ],
+    //     }), 1
+    // );      
 
     console.log("going to prove")
 
