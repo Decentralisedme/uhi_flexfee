@@ -1,0 +1,18 @@
+# Compiler files
+hook/cache/
+hook/out/
+
+# Ignores development (and goerli) broadcast logs
+!/broadcast
+/hook/broadcast/*/31337/
+/hook/broadcast/*/5/
+/hook/broadcast/**/dry-run/
+
+# Docs
+hook/docs/
+
+# Dotenv file
+hook/.env
+
+# Node modules
+hook/node_modules/
