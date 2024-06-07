@@ -100,14 +100,14 @@ async function main() {
     }
     console.log('proof', proofRes.proof);
 
-    // try {
-    //     const brevisRes = await brevis.submit(proofReq, proofRes, 1, 11155111);
-    //     console.log('brevis res', brevisRes);
+    try {
+        const brevisRes = await brevis.submit(proofReq, proofRes, 1, 11155111);
+        console.log('brevis res', brevisRes);
 
-    //     await brevis.wait(brevisRes.brevisId, 11155111);
-    // } catch (err) {
-    //     console.error(err);
-    // }
+        await brevis.wait(brevisRes.brevisId, 11155111);
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 main();
