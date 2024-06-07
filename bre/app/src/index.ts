@@ -81,7 +81,7 @@ async function getPreviousLogs(creationTX: any, contractAddress: any, abi: any, 
     const maxBlockDiff = 100;
 
     // avoid some reorg or dropped txs (re-check this issue)
-    const endBlock = Number(await web3Provider.eth.getBlockNumber()) - 30000;
+    const endBlock = 19308800 //Number(await web3Provider.eth.getBlockNumber()) - 30000;
 
     // get the start block of this pool
     const receipt = await web3Provider.eth.getTransactionReceipt(creationTX);
@@ -164,16 +164,16 @@ async function main() {
 
     proofReq.addReceipt(
         new ReceiptData({
-            block_num: 19996326,
-            tx_hash: '0xb79c3ff11f9f402439915669be5d01f767e167c30ac24a09f66c69c0ed6cdaac',
+            block_num: 19308799,
+            tx_hash: '0xfe8c6f82c3da2c3ccf65623f52a9e0d4d5af825e7ae3c32c013988efb403949b',
             fields: [
                 new Field({
                     contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-                    log_index: 12,
+                    log_index: 153,
                     event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
                     is_topic: false,
                     field_index: 2,
-                    value: '1286977918479647748315046269489039',
+                    value: '1422045384449495693860528555476309',
                 }),               
             ],
         }), 0
@@ -181,16 +181,16 @@ async function main() {
 
     proofReq.addReceipt(
         new ReceiptData({
-            block_num: 19996331,
-            tx_hash: '0xae1e58570ff0d9fcf450814a9e467905c131cd7c654c2ef758dd0bc1d4267027',
+            block_num: 19308798,
+            tx_hash: '0xf5ff0afb6acc8124eb00231cf93b4c378d013a9b94adb0b1b1b75c4a2fd7f45f',
             fields: [
                 new Field({
                     contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-                    log_index: 3,
+                    log_index: 236,
                     event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
                     is_topic: false,
                     field_index: 2,
-                    value: '1288977918479647748315046269489039',
+                    value: '1422062131426387928667329689726225',
                 }),               
             ],
         }), 1

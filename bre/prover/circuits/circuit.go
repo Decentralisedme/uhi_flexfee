@@ -6,12 +6,13 @@ import (
 	"github.com/brevis-network/brevis-sdk/sdk"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"strconv"
+	// "strconv"
 )
 
 // This example circuit analyzes the swap events between USDC and ETH/WETH for a user.
 
 type AppCircuit struct {
+	// UserAddr sdk.Uint248
 }
 
 // Your guest circuit must implement the sdk.AppCircuit interface
@@ -39,7 +40,7 @@ func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// always have 5 processing "chips" for receipts and none for others. It means
 	// your compiled circuit will always be only able to process up to 5 receipts and
 	// cannot process other types unless you change the allocations and recompile.
-	return 2, 0, 0
+	return 3, 0, 0
 }
 
 func toBoolean(val sdk.Uint248, api *sdk.CircuitAPI) bool {
@@ -102,72 +103,26 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 		return u248.Mul(i, i)
 	})
 
-	countString := fmt.Sprintf("%d", sdk.Count(prices).Val)
-	count, _ := strconv.Atoi(countString)
-	
-	var mean sdk.Uint248
-
-	if count > 1 {
-		emptyList := make([]sdk.Uint248, 0)
-
-		headRemovedPrice := sdk.RangeUnderlying(prices, 1, count)
-
-		lastRemovedPrice := sdk.RangeUnderlying(prices, 0, count-1)
-
-		sdk.Map(headRemovedPrice, func(price sdk.Uint248) sdk.Uint248 {
-			emptyList = append(emptyList, price)
-			return price
-		})
-			
-
-		returns := sdk.ZipMap2(lastRemovedPrice, emptyList, func(a, b sdk.Uint248) sdk.Uint248 {
-			return absDiff(api, a, b)
-		})
-
-		fmt.Println("returns:")
-		returns.Show()
-
-		mean = sdk.Mean(returns)
-
-		sqrd_variance := sdk.Map(returns, func(_return sdk.Uint248) sdk.Uint248 {
-			variance := u248.Sub(_return, mean)
-			return u248.Mul(variance, variance)
-		})
-
-		sum_variance := sdk.Mean(sqrd_variance)
-
-		mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
-		vol := u248.Sqrt(mean_var)
-
-		fmt.Println("vol return path:")
-		fmt.Println(vol)
-
-		api.OutputUint(248, mean)
+	mean := sdk.Mean(prices)
 
 
-	} else {
-		mean = sdk.Mean(prices)
-	
+	sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
+		variance := u248.Sub(price, mean)
+		return u248.Mul(variance, variance)
+	})
 
-		sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
-			variance := u248.Sub(price, mean)
-			return u248.Mul(variance, variance)
-		})
+	sum_variance := sdk.Mean(sqrd_variance)
 
-		sum_variance := sdk.Mean(sqrd_variance)
+	mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
+	vol := u248.Sqrt(mean_var)
 
-		mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
-		vol := u248.Sqrt(mean_var)
+	fmt.Println("vol price path:")
+	fmt.Println(vol)
 
-		fmt.Println("vol price path:")
-		fmt.Println(vol)
-
-		// Output will be reflected in app contract's callback in the form of
-		// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
-		// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
-		api.OutputUint(248, mean)
-
-	}
+	// Output will be reflected in app contract's callback in the form of
+	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
+	// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
+	api.OutputUint(248, mean)
 	
 
 	return nil
