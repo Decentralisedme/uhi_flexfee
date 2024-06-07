@@ -6,6 +6,44 @@ import { readFileSync } from 'fs';
 const rootBrevisDirectory = __dirname.split('/').slice(0, -1).join('/')
 
 const USDC_WETH_V3_ABI = JSON.parse(readFileSync(rootBrevisDirectory + '/ABI/usdcWethV3.json', 'utf-8'));
+const BREVIS_REQUEST_ABI = JSON.parse(readFileSync(rootBrevisDirectory + '/ABI/brevisRequest.json', 'utf-8'));
+
+const web3Sepolia = new Web3("https://1rpc.io/sepolia")
+const brevisRequestAddr = "0x5fB46FF3565a78bCC83F8394AC72933503b704FA"
+const brevisRequestContract = new web3Sepolia.eth.Contract(BREVIS_REQUEST_ABI, brevisRequestAddr)
+
+var gasPrice, gasLimit;
+
+interface SubmitResponse {
+    brevisId: string;
+    fee: string;
+}
+
+function formatBrevisData(brevisRes: SubmitResponse, refundee: string, callback: string){
+    const data = brevisRequestContract.methods.sendRequest(brevisRes.brevisId, refundee, callback).encodeABI();
+    return data
+}
+
+function getAccount(privKey: string) {
+    return web3Sepolia.eth.accounts.privateKeyToAddress(privKey);
+}
+
+async function sendTransaction(from: string, to: string, givenData: string, privKey: string){
+
+    var signedTx = await web3Sepolia.eth.accounts.signTransaction(
+        {
+            from: from,
+            to: to,
+            value: 0,
+            maxFeePerGas: 3000000000,
+            maxPriorityFeePerGas: 2000000000,
+            data: givenData
+        }, privKey);
+
+    var receipt = await web3Sepolia.eth.sendSignedTransaction(signedTx.rawTransaction);
+
+    console.log(receipt);
+}
 
 
 async function getSwapLogsFromBlock(blockNum: any){
@@ -134,6 +172,9 @@ async function main() {
     const prover = new Prover('localhost:33247');
     const brevis = new Brevis('appsdk.brevis.network:11080');
 
+    const privateKey = process.argv[2]
+    console.log(privateKey)
+
     // const tempWeb3Addr = new Web3("https://eth.llamarpc.com")
     // getPreviousLogs("0x125e0b641d4a4b08806bf52c0c6757648c9963bcda8681e4f996f09e00d4c2cc", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", ABI, tempWeb3Addr)
 
@@ -161,7 +202,7 @@ async function main() {
     //         break;
     //     }
     // }
-
+    // 19308800
     proofReq.addReceipt(
         new ReceiptData({
             block_num: 19308799,
@@ -179,22 +220,22 @@ async function main() {
         }), 0
     );       
 
-    proofReq.addReceipt(
-        new ReceiptData({
-            block_num: 19308798,
-            tx_hash: '0xf5ff0afb6acc8124eb00231cf93b4c378d013a9b94adb0b1b1b75c4a2fd7f45f',
-            fields: [
-                new Field({
-                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-                    log_index: 236,
-                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-                    is_topic: false,
-                    field_index: 2,
-                    value: '1422062131426387928667329689726225',
-                }),               
-            ],
-        }), 1
-    );      
+    // proofReq.addReceipt(
+    //     new ReceiptData({
+    //         block_num: 19308798,
+    //         tx_hash: '0xf5ff0afb6acc8124eb00231cf93b4c378d013a9b94adb0b1b1b75c4a2fd7f45f',
+    //         fields: [
+    //             new Field({
+    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+    //                 log_index: 236,
+    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+    //                 is_topic: false,
+    //                 field_index: 2,
+    //                 value: '1422062131426387928667329689726225',
+    //             }),               
+    //         ],
+    //     }), 1
+    // );      
 
     console.log("going to prove")
 
@@ -224,12 +265,86 @@ async function main() {
 
     console.log("\n\ngoing to go submit\n\n")
 
-    try {
+    // private async _prepareQuery(
+    //     request: ProofRequest,
+    //     circuitInfo: AppCircuitInfo,
+    //     srcChainId: number,
+    //     dstChainId: number,
+    // ): Promise<PrepareQueryResponse> {
+    //     const req = new PrepareQueryRequest({
+    //         chain_id: srcChainId,
+    //         target_chain_id: dstChainId,
+    //         receipt_infos: request.getReceipts().map(r => this.buildReceiptInfo(r.data)),
+    //         storage_query_infos: request.getStorages().map(s => this.buildStorageInfo(s.data)),
+    //         transaction_infos: request.getTransactions().map(t => this.buildTransactionInfo(t.data)),
+    //         use_app_circuit_info: true,
+    //         app_circuit_info: circuitInfo,
+    //     });
+    //     const res = await this.client.PrepareQuery(req);
+    //     return res;
+    // }
 
+    // private buildReceiptInfo(data: ReceiptData): ReceiptInfo {
+    //     return new ReceiptInfo({
+    //         blk_num: data.block_num,
+    //         transaction_hash: data.tx_hash,
+    //         log_extract_infos: data.fields.map(f => {
+    //             return new LogExtractInfo({
+    //                 contract_address: f.contract,
+    //                 log_index: f.log_index,
+    //                 log_topic0: f.event_id,
+    //                 value_from_topic: f.is_topic,
+    //                 value_index: f.field_index,
+    //                 value: f.value,
+    //             });
+    //         }),
+    //     });
+    // }
+
+        
+
+    var rData = proofReq.getReceipts().map(r => {
+        var data = r.data
+       var x =  {
+                    blk_num: data.block_num,
+                    transaction_hash: data.tx_hash,
+                    log_extract_infos: data.fields.map(f => {
+                        return {
+                            contract_address: f.contract,
+                            log_index: f.log_index,
+                            log_topic0: f.event_id,
+                            value_from_topic: f.is_topic,
+                            value_index: f.field_index,
+                            value: f.value,
+                        };
+                    }),
+                }
+        console.log(x)
+        return data
+    })
+
+    var sData = proofReq.getStorages().map(s => s.data)
+    var tData = proofReq.getTransactions().map(t => t.data)
+
+    // console.log(JSON.stringify(rData, null, 2))
+    // console.log(JSON.stringify(sData, null, 2))
+    // console.log(JSON.stringify(tData, null, 2))
+    
+
+
+    try {
         const brevisRes = await brevis.submit(proofReq, proofRes, 1, 11155111);
         console.log('brevis res', brevisRes);
 
-        await brevis.wait(brevisRes.id, 11155111);
+        const refundee = getAccount(privateKey);
+        const callback = "0xef1B4B164Fd3b7933bfaDb042373560e715Ec5D6";
+
+        var brevisDataToSend = (formatBrevisData(brevisRes, refundee, callback))
+        console.log(refundee, brevisRequestAddr, brevisDataToSend, privateKey)
+
+        await sendTransaction(refundee, brevisRequestAddr, brevisDataToSend, privateKey)
+
+        await brevis.wait(brevisRes.brevisId, 11155111);
     } catch (err) {
         console.error(err);
     }

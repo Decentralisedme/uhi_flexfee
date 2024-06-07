@@ -106,18 +106,18 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	mean := sdk.Mean(prices)
 
 
-	sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
-		variance := u248.Sub(price, mean)
-		return u248.Mul(variance, variance)
-	})
+	// sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
+	// 	variance := u248.Sub(price, mean)
+	// 	return u248.Mul(variance, variance)
+	// })
 
-	sum_variance := sdk.Mean(sqrd_variance)
+	// sum_variance := sdk.Mean(sqrd_variance)
 
-	mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
-	vol := u248.Sqrt(mean_var)
+	// mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
+	// vol := u248.Sqrt(mean_var)
 
-	fmt.Println("vol price path:")
-	fmt.Println(vol)
+	// fmt.Println("vol price path:")
+	// fmt.Println(vol)
 
 	// Output will be reflected in app contract's callback in the form of
 	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
