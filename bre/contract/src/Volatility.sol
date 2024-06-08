@@ -6,6 +6,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./brevis/BrevisApp.sol";
 import "./brevis/IBrevisProof.sol";
 
+/**
+    This is an example contract for handling the callback from the Brevis service with the volaitility data
+    the actualy contract used by the FlexFee project is in the "hook" folder
+ */
 contract Volatility is BrevisApp, Ownable {
     event VolatilityUpdated(uint256 volatility);
 
