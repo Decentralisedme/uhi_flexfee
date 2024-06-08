@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "../lib/Lib.sol";
+import "./Lib.sol";
 
 interface IBrevisProof {
     function submitProof(
