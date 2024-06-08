@@ -9,6 +9,9 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
 import {SwapFeeLibrary} from "./SwapFeeLibrary.sol";
+import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
+
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract VolFeesHook is BaseHook {
     using SwapFeeLibrary for uint24;
@@ -24,6 +27,8 @@ contract VolFeesHook is BaseHook {
     // State Variables
     ///////////////
     uint24 public constant BASE_FEE = 3000; // 0.3%
+    uint24 public constant HOOK_COMMISSION = 100; // 0.01%
+
     uint256 public constant PRICE = 3800 * 10 ** 18;
     uint256 private s_volatility = 20 * 10 ** 16;
 
@@ -74,12 +79,29 @@ contract VolFeesHook is BaseHook {
         poolManagerOnly
         returns (bytes4, BeforeSwapDelta, uint24)
     {
+        takeCommission(key, swapParams);
+
         // Calculate how much fee shold be charged:
         uint24 fee = calculateFee(abs(swapParams.amountSpecified), s_volatility, PRICE);
         // update here the fee charged in the pool
         // poolManager.updateDynamicSwapFee(key, fee);
         // return this.beforeSwap.selector;
         return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, fee);
+    }
+
+    function takeCommission(PoolKey calldata key, IPoolManager.SwapParams calldata swapParams) internal {
+        uint256 tokenAmount =
+            swapParams.amountSpecified < 0 ? uint256(-swapParams.amountSpecified) : uint256(swapParams.amountSpecified);
+
+        
+        uint256 commissionAmt = Math.mulDiv(tokenAmount, HOOK_COMMISSION, 10000);        
+
+        // determine inbound token based on 0->1 or 1->0 swap
+        Currency inbound = swapParams.zeroForOne ? key.currency0 : key.currency1;
+
+        // take the inbound token from the PoolManager, debt is paid by the swapper via the swap router
+        // (inbound token is added to hook's reserves)
+        poolManager.take(inbound, address(this), commissionAmt);
     }
 
     ///////////////////
