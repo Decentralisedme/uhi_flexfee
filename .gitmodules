@@ -10,3 +10,6 @@
 [submodule "bre/contract/lib/openzeppelin-contracts"]
 	path = bre/contract/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "bre/contract/lib/Solidity-RLP"]
+	path = bre/contract/lib/Solidity-RLP
+	url = https://github.com/hamdiallam/Solidity-RLP
