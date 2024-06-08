@@ -3,8 +3,8 @@ pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../brevis/BrevisApp.sol";
-import "../brevis/IBrevisProof.sol";
+import "./brevis/BrevisApp.sol";
+import "./brevis/IBrevisProof.sol";
 
 contract Volatility is BrevisApp, Ownable {
     event VolatilityUpdated(uint256 volatility);
