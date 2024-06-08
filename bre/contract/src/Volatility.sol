@@ -6,10 +6,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../brevis/BrevisApp.sol";
 import "../brevis/IBrevisProof.sol";
 
-contract AccountAge is BrevisApp, Ownable {
-    event AccountAgeAttested(address account, uint64 blockNum);
+contract Volatility is BrevisApp, Ownable {
+    event VolatilityUpdated(uint256 volatility);
 
     bytes32 public vkHash;
+
+    uint256 public volatility;
 
     constructor(address brevisProof) BrevisApp(IBrevisProof(brevisProof)) Ownable(msg.sender) {}
 
@@ -23,18 +25,16 @@ contract AccountAge is BrevisApp, Ownable {
         // our designated verifying key. This proves that the _circuitOutput is authentic
         require(vkHash == _vkHash, "invalid vk");
 
-        (address txFrom, uint64 blockNum) = decodeOutput(_circuitOutput);
+        volatility = decodeOutput(_circuitOutput);
 
-        emit AccountAgeAttested(txFrom, blockNum);
+        emit VolatilityUpdated(volatility);
     }
 
     // In app circuit we have:
-    // api.OutputAddress(tx.From)
-    // api.OutputUint(64, tx.BlockNum)
-    function decodeOutput(bytes calldata o) internal pure returns (address, uint64) {
-        address txFrom = address(bytes20(o[0:20])); // txFrom was output as an address
-        uint64 blockNum = uint64(bytes8(o[20:28])); // blockNum was output as a uint64 (8 bytes)
-        return (txFrom, blockNum);
+    // api.OutputUint(248, vol)
+    function decodeOutput(bytes calldata o) internal pure returns (uint256) {
+        uint248 vol = uint248(bytes31(o[0:31])); // vol is output as a uint248 (31 bytes)   
+        return uint256(vol);
     }
 
     function setVkHash(bytes32 _vkHash) external onlyOwner {
