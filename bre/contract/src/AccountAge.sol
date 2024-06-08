@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./lib/BrevisApp.sol";
-import "./lib/IBrevisProof.sol";
+import "../brevis/BrevisApp.sol";
+import "../brevis/IBrevisProof.sol";
 
 contract AccountAge is BrevisApp, Ownable {
     event AccountAgeAttested(address account, uint64 blockNum);
