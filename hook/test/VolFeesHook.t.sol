@@ -16,7 +16,7 @@ import {HookMiner} from "./utils/HookMiner.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {VolFeesHook} from "../src/VolFeesHook.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
-
+import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 
 contract TestVolFeesHook is Test, Deployers {
     using CurrencyLibrary for Currency;
@@ -72,5 +72,25 @@ contract TestVolFeesHook is Test, Deployers {
         console.log("Test2 fee value: ", fee);
         //console.log("Test2 vol: ", s_volatility);
         assertNotEq(fee, 0);
+    }
+
+    function test_high_vol_low_amt() public {
+        // Arrange
+        uint256 balance1Before = currency1.balanceOfSelf();
+        bool zeroForOne = true;
+        int256 amountSpecified = 10 ether;
+
+        // Act
+        uint24 fee = hook.getFee(amountSpecified);
+        BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        // Assert
+        assertEq(fee, 8398819); // 0.1544%
+
+        assertEq(int256(swapDelta.amount0()), amountSpecified);
+        uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
+        assertEq(int256(swapDelta.amount1()), -int256(token1Output));
+
+        assertEq(token1Output, 9979815044661793887);
     }
 }
