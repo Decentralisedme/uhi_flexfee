@@ -35,7 +35,8 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Deploy our hook with the proper flags
         uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG);
-        (, bytes32 salt) = HookMiner.find(address(this), flags, type(VolFeesHook).creationCode, abi.encode(manager));
+        (, bytes32 salt) =
+            HookMiner.find(address(this), flags, type(VolFeesHook).creationCode, abi.encode(manager, BREVIS_PROOF));
 
         // DEPLOY HOOK
         hook = new VolFeesHook{salt: salt}(manager, BREVIS_PROOF);
