@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
@@ -23,6 +23,8 @@ contract TestVolFeesHook is Test, Deployers {
     using PoolIdLibrary for PoolKey;
 
     address internal constant BREVIS_PROOF = 0x4446e0f8417C1db113899929A8F3cEe8e0DcBCDb;
+
+    VolFeesHook hook;
 
     function setUp() public {
         // Deploy v4-core
