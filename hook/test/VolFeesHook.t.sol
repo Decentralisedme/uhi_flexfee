@@ -94,35 +94,6 @@ contract TestVolFeesHook is Test, Deployers {
         // Arrange
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
-        int256 amountSpecified = 10_000;
-        uint248 volatility = 1 * 10 ** 18; // 1% vol
-
-        // simulate Brevis service callback update
-        brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
-        hook.brevisCallback(bytes32(0), abi.encodePacked(volatility));
-
-        assertEq(hook.volatility(), volatility);
-
-        // Act
-        uint24 fee = hook.getFee(amountSpecified);
-        BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
-
-        // Assert
-        // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
-
-        // assertEq(swapDelta.amount0(), -10005);
-
-        // uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
-        // assertEq(int256(swapDelta.amount1()), int256(token1Output));
-
-        // assertEq(int256(token1Output), amountSpecified);
-    }
-
-    function test_low_vol_mid_amt() public {
-        // Arrange
-        uint256 balance1Before = currency1.balanceOfSelf();
-        bool zeroForOne = true;
         int256 amountSpecified = 1 ether;
         uint248 volatility = 1 * 10 ** 18; // 1% vol
 
@@ -138,7 +109,7 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
+        assertEq(fee, 50); // 0.05%
 
         // assertEq(swapDelta.amount0(), -10005);
 
@@ -148,11 +119,11 @@ contract TestVolFeesHook is Test, Deployers {
         // assertEq(int256(token1Output), amountSpecified);
     }
 
-    function test_low_vol_high_amt() public {
+    function test_low_vol_mid_amt() public {
         // Arrange
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
-        int256 amountSpecified = 100_000 ether;
+        int256 amountSpecified = 50 ether;
         uint248 volatility = 1 * 10 ** 18; // 1% vol
 
         // simulate Brevis service callback update
@@ -167,7 +138,36 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
+        assertEq(fee, 52); // 0.052%
+
+        // assertEq(swapDelta.amount0(), -10005);
+
+        // uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
+        // assertEq(int256(swapDelta.amount1()), int256(token1Output));
+
+        // assertEq(int256(token1Output), amountSpecified);
+    }
+
+    function test_low_vol_high_amt() public {
+        // Arrange
+        uint256 balance1Before = currency1.balanceOfSelf();
+        bool zeroForOne = true;
+        int256 amountSpecified = 1_000_000 ether;
+        uint248 volatility = 1 * 10 ** 18; // 1% vol
+
+        // simulate Brevis service callback update
+        brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
+        hook.brevisCallback(bytes32(0), abi.encodePacked(volatility));
+
+        assertEq(hook.volatility(), volatility);
+
+        // Act
+        uint24 fee = hook.getFee(amountSpecified);
+        BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        // Assert
+        // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
+        assertEq(fee, 49432); // 4.943%
 
         // assertEq(swapDelta.amount0(), -10005);
 
@@ -184,35 +184,6 @@ contract TestVolFeesHook is Test, Deployers {
         // Arrange
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
-        int256 amountSpecified = 10_000;
-        uint248 volatility = 10 * 10 ** 18; // 10% vol
-
-        // simulate Brevis service callback update
-        brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
-        hook.brevisCallback(bytes32(0), abi.encodePacked(volatility));
-
-        assertEq(hook.volatility(), volatility);
-
-        // Act
-        uint24 fee = hook.getFee(amountSpecified);
-        BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
-
-        // Assert
-        // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
-
-        // assertEq(swapDelta.amount0(), -10005);
-
-        // uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
-        // assertEq(int256(swapDelta.amount1()), int256(token1Output));
-
-        // assertEq(int256(token1Output), amountSpecified);
-    }
-
-    function test_mid_vol_mid_amt() public {
-        // Arrange
-        uint256 balance1Before = currency1.balanceOfSelf();
-        bool zeroForOne = true;
         int256 amountSpecified = 1 ether;
         uint248 volatility = 10 * 10 ** 18; // 10% vol
 
@@ -228,7 +199,7 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
+        assertEq(fee, 1); // 0.0366%
 
         // assertEq(swapDelta.amount0(), -10005);
 
@@ -238,11 +209,11 @@ contract TestVolFeesHook is Test, Deployers {
         // assertEq(int256(token1Output), amountSpecified);
     }
 
-    function test_mid_vol_high_amt() public {
+    function test_mid_vol_mid_amt() public {
         // Arrange
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
-        int256 amountSpecified = 100_000 ether;
+        int256 amountSpecified = 50 ether;
         uint248 volatility = 10 * 10 ** 18; // 10% vol
 
         // simulate Brevis service callback update
@@ -257,7 +228,36 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
+        assertEq(fee, 1); // 0.0366%
+
+        // assertEq(swapDelta.amount0(), -10005);
+
+        // uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
+        // assertEq(int256(swapDelta.amount1()), int256(token1Output));
+
+        // assertEq(int256(token1Output), amountSpecified);
+    }
+
+    function test_mid_vol_high_amt() public {
+        // Arrange
+        uint256 balance1Before = currency1.balanceOfSelf();
+        bool zeroForOne = true;
+        int256 amountSpecified = 1_000_000 ether;
+        uint248 volatility = 10 * 10 ** 18; // 10% vol
+
+        // simulate Brevis service callback update
+        brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
+        hook.brevisCallback(bytes32(0), abi.encodePacked(volatility));
+
+        assertEq(hook.volatility(), volatility);
+
+        // Act
+        uint24 fee = hook.getFee(amountSpecified);
+        BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        // Assert
+        // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
+        assertEq(fee, 1); // 0.03%
 
         // assertEq(swapDelta.amount0(), -10005);
 
@@ -274,35 +274,6 @@ contract TestVolFeesHook is Test, Deployers {
         // Arrange
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
-        int256 amountSpecified = 10_000;
-        uint248 volatility = 40 * 10 ** 18; // 40% vol
-
-        // simulate Brevis service callback update
-        brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
-        hook.brevisCallback(bytes32(0), abi.encodePacked(volatility));
-
-        assertEq(hook.volatility(), volatility);
-
-        // Act
-        uint24 fee = hook.getFee(amountSpecified);
-        BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
-
-        // Assert
-        // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
-
-        // assertEq(swapDelta.amount0(), -10005);
-
-        // uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
-        // assertEq(int256(swapDelta.amount1()), int256(token1Output));
-
-        // assertEq(int256(token1Output), amountSpecified);
-    }
-
-    function test_high_vol_mid_amt() public {
-        // Arrange
-        uint256 balance1Before = currency1.balanceOfSelf();
-        bool zeroForOne = true;
         int256 amountSpecified = 1 ether;
         uint248 volatility = 40 * 10 ** 18; // 40% vol
 
@@ -318,7 +289,7 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
+        assertEq(fee, 1); // 0.0366%
 
         // assertEq(swapDelta.amount0(), -10005);
 
@@ -328,11 +299,11 @@ contract TestVolFeesHook is Test, Deployers {
         // assertEq(int256(token1Output), amountSpecified);
     }
 
-    function test_high_vol_high_amt() public {
+    function test_high_vol_mid_amt() public {
         // Arrange
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
-        int256 amountSpecified = 100_000 ether;
+        int256 amountSpecified = 50 ether;
         uint248 volatility = 40 * 10 ** 18; // 40% vol
 
         // simulate Brevis service callback update
@@ -347,7 +318,36 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        // assertEq(fee, 366); // 0.0366%
+        assertEq(fee, 1); // 0.0366%
+
+        // assertEq(swapDelta.amount0(), -10005);
+
+        // uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
+        // assertEq(int256(swapDelta.amount1()), int256(token1Output));
+
+        // assertEq(int256(token1Output), amountSpecified);
+    }
+
+    function test_high_vol_high_amt() public {
+        // Arrange
+        uint256 balance1Before = currency1.balanceOfSelf();
+        bool zeroForOne = true;
+        int256 amountSpecified = 1_000_000 ether;
+        uint248 volatility = 40 * 10 ** 18; // 40% vol
+
+        // simulate Brevis service callback update
+        brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
+        hook.brevisCallback(bytes32(0), abi.encodePacked(volatility));
+
+        assertEq(hook.volatility(), volatility);
+
+        // Act
+        uint24 fee = hook.getFee(amountSpecified);
+        BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+
+        // Assert
+        // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
+        assertEq(fee, 1); // 0.0366%
 
         // assertEq(swapDelta.amount0(), -10005);
 
