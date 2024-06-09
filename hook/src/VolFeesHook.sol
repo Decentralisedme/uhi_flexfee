@@ -10,6 +10,7 @@ import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
 import {SwapFeeLibrary} from "./SwapFeeLibrary.sol";
 import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
+import {LPFeeLibrary} from "v4-core/src/libraries/LPFeeLibrary.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -79,13 +80,18 @@ contract VolFeesHook is BaseHook {
         poolManagerOnly
         returns (bytes4, BeforeSwapDelta, uint24)
     {
-        takeCommission(key, swapParams);
+        //takeCommission(key, swapParams);
 
         // Calculate how much fee shold be charged:
         uint24 fee = calculateFee(abs(swapParams.amountSpecified), s_volatility, PRICE);
         // update here the fee charged in the pool
         // poolManager.updateDynamicSwapFee(key, fee);
         // return this.beforeSwap.selector;
+
+        fee = 30000; // hard-code 30% for testing
+
+        fee = fee | LPFeeLibrary.OVERRIDE_FEE_FLAG; // we need to apply override flag
+
         return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, fee);
     }
 
@@ -93,8 +99,7 @@ contract VolFeesHook is BaseHook {
         uint256 tokenAmount =
             swapParams.amountSpecified < 0 ? uint256(-swapParams.amountSpecified) : uint256(swapParams.amountSpecified);
 
-        
-        uint256 commissionAmt = Math.mulDiv(tokenAmount, HOOK_COMMISSION, 10000);        
+        uint256 commissionAmt = Math.mulDiv(tokenAmount, HOOK_COMMISSION, 10000);
 
         // determine inbound token based on 0->1 or 1->0 swap
         Currency inbound = swapParams.zeroForOne ? key.currency0 : key.currency1;
