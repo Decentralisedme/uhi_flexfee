@@ -38,10 +38,9 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
     // State Variables
     ///////////////
     uint24 public constant BASE_FEE = 3000; // 0.3%
-    uint24 public constant HOOK_COMMISSION = 100; // 0.01%
 
-    uint256 public constant PRICE = 3800 * 10 ** 18;
-    uint256 private s_volatility = 20 * 10 ** 16;
+    /// the commission on basis points that is paid to the hook to cover Brevis service costs
+    uint24 public constant HOOK_COMMISSION = 100; // 0.01%
 
     // Initial BaseHook Parent Contract
     constructor(IPoolManager _poolManager, address brevisProof)
@@ -97,7 +96,7 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
         //takeCommission(key, swapParams);
 
         // Calculate how much fee shold be charged:
-        uint24 fee = calculateFee(abs(swapParams.amountSpecified), s_volatility, PRICE);
+        uint24 fee = calculateFee(abs(swapParams.amountSpecified));
         // update here the fee charged in the pool
         // poolManager.updateDynamicSwapFee(key, fee);
         // return this.beforeSwap.selector;
@@ -129,13 +128,13 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
     ///////////////////
 
     // Calculate Fee we will charge
-    function calculateFee(uint256 volume, uint256 volatility, uint256 price) internal pure returns (uint24) {
+    function calculateFee(uint256 volume) internal view returns (uint24) {
         uint256 scaled_volume = volume / 150;
         uint256 longterm_eth_volatility = 60;
         uint256 scaled_vol = volatility / longterm_eth_volatility;
         uint256 constant_factor = 2;
         uint256 fee_per_lot = BASE_FEE + (constant_factor * scaled_volume * scaled_vol ** 2);
-        return uint24((fee_per_lot / price / 1e10));
+        return uint24((fee_per_lot / 1e10));
     }
 
     function abs(int256 x) private pure returns (uint256) {
@@ -147,17 +146,7 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
 
     // Get Fee
     function getFee(int256 amnt) external view returns (uint24) {
-        return calculateFee(abs(amnt), s_volatility, PRICE);
-    }
-
-    // Get Vol
-    function getVol() public view returns (uint256) {
-        return s_volatility;
-    }
-
-    // Update Volatility with brevis value
-    function volUpdate(uint256 brevisVol) external returns (uint256) {
-        s_volatility = brevisVol;
+        return calculateFee(abs(amnt));
     }
 
     ///////////////////

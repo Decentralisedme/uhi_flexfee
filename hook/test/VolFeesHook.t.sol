@@ -18,12 +18,17 @@ import {VolFeesHook} from "../src/VolFeesHook.sol";
 import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 
+import {MockBrevisProof} from "../src/brevis/MockBrevisProof.sol";
+
 contract TestVolFeesHook is Test, Deployers {
     using CurrencyLibrary for Currency;
     using PoolIdLibrary for PoolKey;
 
-    address internal constant BREVIS_PROOF = 0x4446e0f8417C1db113899929A8F3cEe8e0DcBCDb;
+    address private constant BREVIS_PROOF = 0x4446e0f8417C1db113899929A8F3cEe8e0DcBCDb;
 
+    bytes32 private constant VK_HASH = 0x179a48b8a2a08b246cd51cb7b78143db774a83ff75fad0d39cf0445e16773426;
+
+    MockBrevisProof brevisProofMock;
     VolFeesHook hook;
 
     function setUp() public {
@@ -33,13 +38,20 @@ contract TestVolFeesHook is Test, Deployers {
         //(currency0, currency1) = deployMintAndApprove2Currencies();
         Deployers.deployMintAndApprove2Currencies();
 
+        // mock brevis proof contract for local testing
+        brevisProofMock = new MockBrevisProof();
+
         // Deploy our hook with the proper flags
         uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG);
-        (, bytes32 salt) =
-            HookMiner.find(address(this), flags, type(VolFeesHook).creationCode, abi.encode(manager, BREVIS_PROOF));
+        (, bytes32 salt) = HookMiner.find(
+            address(this), flags, type(VolFeesHook).creationCode, abi.encode(manager, address(brevisProofMock))
+        );
 
         // DEPLOY HOOK
-        hook = new VolFeesHook{salt: salt}(manager, BREVIS_PROOF);
+        hook = new VolFeesHook{salt: salt}(manager, address(brevisProofMock));
+
+        // set brevis VK hash
+        hook.setVkHash(VK_HASH);
 
         // Initialize a pool
         // Usually in 4th position you will have value of the fees (ie 3000)
@@ -60,17 +72,17 @@ contract TestVolFeesHook is Test, Deployers {
     function test_feeCalculation() public {
         int256 amountSpecified = 10 ether;
         uint24 fee = hook.getFee(amountSpecified);
-        uint256 vol = hook.getVol();
+        uint256 vol = hook.volatility();
         console.log("Test1 Vol value: ", vol);
         console.log("Test1 Fee value: ", fee);
         assertNotEq(fee, 0);
     }
 
     function test_volUpdate_feeCalculation() public {
-        uint256 s_volatility = hook.volUpdate(80 * 10 ** 16);
+        //uint256 s_volatility = hook.volUpdate(80 * 10 ** 16);
         int256 amountSpecified = 10 ether;
         uint24 fee = hook.getFee(amountSpecified);
-        uint256 vol = hook.getVol();
+        uint256 vol = hook.volatility();
         console.log("Test2 Vol value: ", vol);
         console.log("Test2 fee value: ", fee);
         //console.log("Test2 vol: ", s_volatility);
@@ -82,13 +94,17 @@ contract TestVolFeesHook is Test, Deployers {
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
         int256 amountSpecified = 10_000;
+        uint248 volatility = 18446744073709561472;
+
+        // simulate Brevis service callback update
+        brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
+        hook.brevisCallback(bytes32(0), abi.encodePacked(volatility));
+
+        assertEq(hook.volatility(), volatility);
 
         // Act
         uint24 fee = hook.getFee(amountSpecified);
         BalanceDelta swapDelta = Deployers.swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
-
-        console.logInt(swapDelta.amount0());
-        console.logInt(swapDelta.amount1());
 
         // Assert
         // assertEq(fee, 8398819); // 0.1544%
