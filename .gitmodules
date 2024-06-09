@@ -10,3 +10,6 @@
 [submodule "bre/contract/lib/Solidity-RLP"]
 	path = bre/contract/lib/Solidity-RLP
 	url = https://github.com/hamdiallam/Solidity-RLP
+[submodule "hook/lib/Solidity-RLP"]
+	path = hook/lib/Solidity-RLP
+	url = https://github.com/hamdiallam/Solidity-RLP
