@@ -95,6 +95,7 @@ contract VolFeesHook is BaseHook {
         return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, fee);
     }
 
+    /// POC taking commissions to cover Brevis costs
     function takeCommission(PoolKey calldata key, IPoolManager.SwapParams calldata swapParams) internal {
         uint256 tokenAmount =
             swapParams.amountSpecified < 0 ? uint256(-swapParams.amountSpecified) : uint256(swapParams.amountSpecified);
