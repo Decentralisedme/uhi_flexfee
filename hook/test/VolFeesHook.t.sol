@@ -22,7 +22,7 @@ contract TestVolFeesHook is Test, Deployers {
     using CurrencyLibrary for Currency;
     using PoolIdLibrary for PoolKey;
 
-    VolFeesHook hook;
+    address internal constant BREVIS_PROOF = 0x4446e0f8417C1db113899929A8F3cEe8e0DcBCDb;
 
     function setUp() public {
         // Deploy v4-core
@@ -36,7 +36,7 @@ contract TestVolFeesHook is Test, Deployers {
         (, bytes32 salt) = HookMiner.find(address(this), flags, type(VolFeesHook).creationCode, abi.encode(manager));
 
         // DEPLOY HOOK
-        hook = new VolFeesHook{salt: salt}(manager);
+        hook = new VolFeesHook{salt: salt}(manager, BREVIS_PROOF);
 
         // Initialize a pool
         // Usually in 4th position you will have value of the fees (ie 3000)
