@@ -97,11 +97,6 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
 
         // Calculate how much fee shold be charged:
         uint24 fee = calculateFee(abs(swapParams.amountSpecified));
-        // update here the fee charged in the pool
-        // poolManager.updateDynamicSwapFee(key, fee);
-        // return this.beforeSwap.selector;
-
-        fee = 30000; // hard-code 30% for testing
 
         fee = fee | LPFeeLibrary.OVERRIDE_FEE_FLAG; // we need to apply override flag
 
@@ -134,7 +129,7 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
         uint256 scaled_vol = volatility / longterm_eth_volatility;
         uint256 constant_factor = 2;
         uint256 fee_per_lot = BASE_FEE + (constant_factor * scaled_volume * scaled_vol ** 2);
-        return uint24((fee_per_lot / 1e10));
+        return uint24((fee_per_lot / 1e32));
     }
 
     function abs(int256 x) private pure returns (uint256) {
