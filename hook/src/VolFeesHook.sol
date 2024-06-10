@@ -26,7 +26,6 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
 
     uint256 public volatility;
 
-    //mapping(PoolId => uint256 count) public beforeSwapCount;
     /////////
     // ERRORs
     /////////
@@ -88,6 +87,7 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
 
     function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata swapParams, bytes calldata)
         external
+        view
         override
         poolManagerOnly
         returns (bytes4, BeforeSwapDelta, uint24)
@@ -151,6 +151,7 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
     ///////////////////
 
     // Calculate Fee we will charge
+
     function calculateFee(uint256 volume) internal view returns (uint24) {
         uint256 constant_factor = 1e26;
         uint256 variable_fee = sqrt(volume) * volatility / constant_factor;
@@ -161,6 +162,7 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
         if (x >= 0) {
             return uint256(x);
         }
+        
         return uint256(-x);
     }
 
