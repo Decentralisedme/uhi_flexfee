@@ -109,9 +109,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 40); // 4bps
+        assertEq(fee, 400); // 4bps
 
-        assertEq(swapDelta.amount0(), -300447424171159413);
+        assertEq(swapDelta.amount0(), -300555628525602808);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -138,9 +138,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 83); // 8.3bps
+        assertEq(fee, 832); // 8.3bps
 
-        assertEq(swapDelta.amount0(), -300460344482784638);
+        assertEq(swapDelta.amount0(), -300685576673985322);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -167,9 +167,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 220); // 22bps
+        assertEq(fee, 2200); // 22bps
 
-        assertEq(swapDelta.amount0(), -300501516607846293);
+        assertEq(swapDelta.amount0(), -301097821481451760);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -199,9 +199,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 80); // 8bps
+        assertEq(fee, 800); // 8bps
 
-        assertEq(swapDelta.amount0(), -300459443029634937);
+        assertEq(swapDelta.amount0(), -300675947031818021);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -228,9 +228,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 209); // 20.9bps
+        assertEq(fee, 2097); // 20.9bps
 
-        assertEq(swapDelta.amount0(), -300498210400166201);
+        assertEq(swapDelta.amount0(), -301066743234755850);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -257,9 +257,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 620); // 62bps
+        assertEq(fee, 6200); // 62bps
 
-        assertEq(swapDelta.amount0(), -300621791785099328);
+        assertEq(swapDelta.amount0(), -302309726578982256);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -289,9 +289,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 140); // 14bps
+        assertEq(fee, 1400); // 14bps
 
-        assertEq(swapDelta.amount0(), -300477473120429427);
+        assertEq(swapDelta.amount0(), -300856605521923259);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -318,9 +318,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 399); // 39.9bps
+        assertEq(fee, 3994); // 39.9bps
 
-        assertEq(swapDelta.amount0(), -300555327850004718);
+        assertEq(swapDelta.amount0(), -301640157061496182);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
@@ -347,9 +347,9 @@ contract TestVolFeesHook is Test, Deployers {
 
         // Assert
         // the swap fee is represented in hundredths of a bip, so the 1000000 is 100%
-        assertEq(fee, 1220); // 1.22%
+        assertEq(fee, 12200); // 1.22%
 
-        assertEq(swapDelta.amount0(), -300802385184117189);
+        assertEq(swapDelta.amount0(), -304145987319490349);
 
         uint256 token1Output = currency1.balanceOfSelf() - balance1Before;
         assertEq(int256(swapDelta.amount1()), int256(token1Output));
