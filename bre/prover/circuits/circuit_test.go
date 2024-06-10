@@ -23,7 +23,6 @@ func TestCircuit(t *testing.T) {
 		Address:  usdcPool,
 		Slot:     common.HexToHash("0x0"),
 		Value:    common.HexToHash("0x00010002d302d3006802f57f0000000000003f73f1eef341535bdd27ba150f8f"),
-		// Value:    common.HexToHash("0x00010002d302d3006802f57f0000000000003f73f1eef341535bdd27ba150f8f"),
 	})
 
 	app.AddStorage(sdk.StorageData{
@@ -31,7 +30,13 @@ func TestCircuit(t *testing.T) {
 		Address:  usdcPool,
 		Slot:     common.HexToHash("0x0"),
 		Value:    common.HexToHash("0x00010002d302d3006802f57f0000000000003f73f8c2359ddd1b7c9f5c6dc6be"),
-		// Value:    common.HexToHash("0x00010002d302d3006802f57f0000000000003f73f8c2359ddd1b7c9f5c6dc6be"),
+	})
+
+	app.AddStorage(sdk.StorageData{
+		BlockNum: big.NewInt(19996333),
+		Address:  usdcPool,
+		Slot:     common.HexToHash("0x0"),
+		Value:    common.HexToHash("0x00010002d302d3006802f57f0000000000003f73f8c2359ddd1b7c9f5c6dc6be"),
 	})
 
 	// Initialize our AppCircuit and prepare the circuit assignment
