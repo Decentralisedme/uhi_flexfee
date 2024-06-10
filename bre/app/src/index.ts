@@ -276,7 +276,7 @@ async function main(){
     const prover = new Prover('localhost:33247');
     const brevis = new Brevis('appsdk.brevis.network:11080');
 
-    const minsToSleep = 5
+    const minsToSleep = 20
 
     const privateKey = process.argv[2]
     console.log(privateKey)
