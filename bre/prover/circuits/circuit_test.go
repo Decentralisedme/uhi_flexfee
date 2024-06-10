@@ -54,12 +54,8 @@ func TestCircuit(t *testing.T) {
 	})
 
 	// Initialize our AppCircuit and prepare the circuit assignment
-	appCircuit := &AppCircuit{
-		UserAddr: sdk.ConstUint248(common.HexToAddress("0xaefB31e9EEee2822f4C1cBC13B70948b0B5C0b3c")),
-	}
-	appCircuitAssignment := &AppCircuit{
-		UserAddr: sdk.ConstUint248(common.HexToAddress("0xaefB31e9EEee2822f4C1cBC13B70948b0B5C0b3c")),
-	}
+	appCircuit := &AppCircuit{}
+	appCircuitAssignment := &AppCircuit{}
 
 	// Execute the added queries and package the query results into circuit inputs
 	in, err := app.BuildCircuitInput(appCircuit)

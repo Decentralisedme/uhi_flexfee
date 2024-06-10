@@ -150,8 +150,8 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 
 	vol := u248.Sqrt(mean_var)
 
-	fmt.Println("vol price path:")
-	fmt.Println(vol)
+	// fmt.Println("vol price path:")
+	// fmt.Println(vol)
 
 	// Output will be reflected in app contract's callback in the form of
 	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
