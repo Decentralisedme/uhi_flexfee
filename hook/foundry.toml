@@ -10,3 +10,7 @@ via_ir = false
 optimizer = true
 optimizer_runs = 800
 ffi = true
+
+[rpc_endpoints]
+mainnet = "wss://mainnet.infura.io/ws/v3/074e6045535d48209742de982d6dad5a"
+sepolia = "wss://sepolia.infura.io/ws/v3/074e6045535d48209742de982d6dad5a"
