@@ -98,7 +98,7 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	// countString := fmt.Sprintf("%d", sdk.Count(prices).Val)
 	// count, _ := strconv.Atoi(countString) // causing problems
 
-	count := len(in.Receipts.Toggles)
+	count := len(in.StorageSlots.Toggles)
 
 	shiftedList := make([]sdk.Uint248, 0)
 
