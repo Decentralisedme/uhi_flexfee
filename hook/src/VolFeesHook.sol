@@ -118,29 +118,6 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
     }
 
     ///////////////////
-    // Helper Functions
-    ///////////////////
-
-    // Calculate Fee we will charge
-    function calculateFee(uint256 volume) internal view returns (uint24) {
-        uint256 constant_factor = 1e26;
-        uint256 variable_fee = sqrt(volume) * volatility/constant_factor;
-        return uint24(BASE_FEE + variable_fee);
-    }
-
-    function abs(int256 x) private pure returns (uint256) {
-        if (x >= 0) {
-            return uint256(x);
-        }
-        return uint256(-x);
-    }
-
-    // Get Fee
-    function getFee(int256 amnt) external view returns (uint24) {
-        return calculateFee(abs(amnt));
-    }
-
-    ///////////////////
     // Brevis Functions
     ///////////////////
 
@@ -167,6 +144,29 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
 
     function setVkHash(bytes32 _vkHash) external onlyOwner {
         vkHash = _vkHash;
+    }
+
+    ///////////////////
+    // Helper Functions
+    ///////////////////
+
+    // Calculate Fee we will charge
+    function calculateFee(uint256 volume) internal view returns (uint24) {
+        uint256 constant_factor = 1e26;
+        uint256 variable_fee = sqrt(volume) * volatility / constant_factor;
+        return uint24(BASE_FEE + variable_fee);
+    }
+
+    function abs(int256 x) private pure returns (uint256) {
+        if (x >= 0) {
+            return uint256(x);
+        }
+        return uint256(-x);
+    }
+
+    // Get Fee
+    function getFee(int256 amnt) external view returns (uint24) {
+        return calculateFee(abs(amnt));
     }
 
     function sqrt(uint256 x) public pure returns (uint256) {
