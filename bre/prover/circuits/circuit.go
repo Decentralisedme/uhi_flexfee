@@ -103,18 +103,52 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 		return u248.Mul(i, i)
 	})
 
-	mean := sdk.Mean(prices)
+	// countString := fmt.Sprintf("%d", sdk.Count(prices).Val)
+	// count, _ := strconv.Atoi(countString) // causing problems
+
+	count := len(in.Receipts.Toggles)
+
+	emptyList := make([]sdk.Uint248, 0)
+
+	lastRemovedPrice := sdk.RangeUnderlying(prices, 0, count - 1)
+
+	fmt.Println("lastRemovedPrice")
+	lastRemovedPrice.Show()
+
+	headRemovedPrice := sdk.RangeUnderlying(prices, 1, count)
+
+	fmt.Println("headRemovedPrice")
+	headRemovedPrice.Show()
 
 
-	// sqrd_variance := sdk.Map(prices, func(price sdk.Uint248) sdk.Uint248 {
-	// 	variance := u248.Sub(price, mean)
-	// 	return u248.Mul(variance, variance)
-	// })
+	// using just to append to the list
+	sdk.Map(headRemovedPrice, func(price sdk.Uint248) sdk.Uint248 {
+		emptyList = append(emptyList, price)
+		return price
+	})
 
-	// sum_variance := sdk.Mean(sqrd_variance)
+	fmt.Println("emptyList")
+	fmt.Println(emptyList)
 
-	// mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
-	// vol := u248.Sqrt(mean_var)
+	returns := sdk.ZipMap2(lastRemovedPrice, emptyList, func(a, b sdk.Uint248) sdk.Uint248 {
+		return absDiff(api, a, b)
+	})
+
+	fmt.Println("returns:")
+	returns.Show()
+
+	mean := sdk.Mean(returns)
+
+	sqrd_variance := sdk.Map(returns, func(_return sdk.Uint248) sdk.Uint248 {
+		variance := absDiff(api, _return, mean)
+		return u248.Mul(variance, variance)
+	})
+
+	sum_variance := sdk.Mean(sqrd_variance)
+
+	mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
+
+	vol := u248.Sqrt(mean_var)
 
 	// fmt.Println("vol price path:")
 	// fmt.Println(vol)
@@ -122,7 +156,7 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	// Output will be reflected in app contract's callback in the form of
 	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
 	// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
-	api.OutputUint(248, mean)
+	api.OutputUint(248, vol)
 	
 
 	return nil

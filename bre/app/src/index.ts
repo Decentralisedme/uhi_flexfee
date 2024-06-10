@@ -214,28 +214,45 @@ async function main() {
                     event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
                     is_topic: false,
                     field_index: 2,
-                    value: '1422045384449495693860528555476309',
+                    value: '1412045384449495693860528555476309',
                 }),               
             ],
         }), 0
     );       
 
-    // proofReq.addReceipt(
-    //     new ReceiptData({
-    //         block_num: 19308798,
-    //         tx_hash: '0xf5ff0afb6acc8124eb00231cf93b4c378d013a9b94adb0b1b1b75c4a2fd7f45f',
-    //         fields: [
-    //             new Field({
-    //                 contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
-    //                 log_index: 236,
-    //                 event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
-    //                 is_topic: false,
-    //                 field_index: 2,
-    //                 value: '1422062131426387928667329689726225',
-    //             }),               
-    //         ],
-    //     }), 1
-    // );      
+    proofReq.addReceipt(
+        new ReceiptData({
+            block_num: 19308798,
+            tx_hash: '0xf5ff0afb6acc8124eb00231cf93b4c378d013a9b94adb0b1b1b75c4a2fd7f45f',
+            fields: [
+                new Field({
+                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+                    log_index: 236,
+                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+                    is_topic: false,
+                    field_index: 2,
+                    value: '1422062131426387928667329689726225',
+                }),               
+            ],
+        }), 1
+    ); 
+    
+    proofReq.addReceipt(
+        new ReceiptData({
+            block_num: 19308798,
+            tx_hash: '0xf5ff0afb6acc8124eb00231cf93b4c378d013a9b94adb0b1b1b75c4a2fd7f45f',
+            fields: [
+                new Field({
+                    contract: '0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640',
+                    log_index: 236,
+                    event_id: '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67',
+                    is_topic: false,
+                    field_index: 2,
+                    value: '1442062131426387928667329689726225',
+                }),               
+            ],
+        }), 2
+    ); 
 
     console.log("going to prove")
 
