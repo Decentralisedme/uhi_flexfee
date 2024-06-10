@@ -13,6 +13,9 @@ const web3Sepolia = new Web3("https://1rpc.io/sepolia")
 const brevisRequestAddr = "0x5fB46FF3565a78bCC83F8394AC72933503b704FA"
 const brevisRequestContract = new web3Sepolia.eth.Contract(BREVIS_REQUEST_ABI, brevisRequestAddr)
 
+const SECONDS_IN_MINUTE = 60
+const MS_IN_SECOND = 100
+
 var gasPrice, gasLimit;
 
 interface SubmitResponse {
@@ -198,18 +201,13 @@ async function getPreviousLogs(creationTX: any, contractAddress: any, abi: any, 
     return receiptDataList;
 }
 
-async function main() {
 
-    const web3 = new Web3('https://eth.llamarpc.com');
-    const prover = new Prover('localhost:33247');
-    const brevis = new Brevis('appsdk.brevis.network:11080');
 
-    const privateKey = process.argv[2]
-    console.log(privateKey)
+async function performRequest(web3: Web3<RegisteredSubscription>, prover: Prover, brevis: Brevis, privateKey: string) {
 
     const proofReq = new ProofRequest();
 
-    const storageDataList = await getStorageDataPoints(15, 19308799, "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", 0, new Web3("https://eth.llamarpc.com"))
+    const storageDataList = await getStorageDataPoints(15, 19308799, "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640", 0, web3)
 
     for (let i = 0; i < storageDataList.length; i++){
         proofReq.addStorage(storageDataList[0], i)
@@ -259,5 +257,21 @@ async function main() {
     }
 }
 
+
+async function main(){
+    const web3 = new Web3('https://eth.llamarpc.com');
+    const prover = new Prover('localhost:33247');
+    const brevis = new Brevis('appsdk.brevis.network:11080');
+
+    const minsToSleep = 5
+
+    const privateKey = process.argv[2]
+    console.log(privateKey)
+
+    while (true) {
+        await performRequest(web3, prover, brevis, privateKey)
+        await new Promise(r => setTimeout(r, minsToSleep*SECONDS_IN_MINUTE*MS_IN_SECOND));
+    }
+}
 
 main()
