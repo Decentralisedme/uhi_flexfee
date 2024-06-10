@@ -332,8 +332,8 @@ contract TestVolFeesHook is Test, Deployers {
         // Arrange
         uint256 balance1Before = currency1.balanceOfSelf();
         bool zeroForOne = true;
-        int256 amountSpecified = 1_000_000 ether;
-        uint248 volatility = 40 * 10 ** 18; // 40% vol
+        int256 amountSpecified = 100 ether;
+        uint248 volatility = 120e18; // 40% vol
 
         // simulate Brevis service callback update
         brevisProofMock.setMockOutput(bytes32(0), keccak256(abi.encodePacked(volatility)), VK_HASH);
