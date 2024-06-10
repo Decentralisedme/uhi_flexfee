@@ -2,4 +2,4 @@
 
 # script to flatten hook for easier verifying on Etherscan
 
-forge flatten src/VolFeesHook.sol -o flattened/FlattenedHook.sol
+forge flatten src/Volatility.sol -o flattened/FlattenedVol.sol
