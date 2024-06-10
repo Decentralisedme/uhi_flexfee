@@ -31,6 +31,7 @@ var UsdcPoolAddress = sdk.ConstUint248(
 	common.HexToAddress("0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"))
 
 var twoPower96 = sdk.ConstUint248("79228162514264337593543950336")
+var zeroU248 = sdk.ConstUint248(0)
 
 func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// Allocating regions for different source data. Here, we are allocating 5 data
@@ -39,7 +40,7 @@ func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// always have 5 processing "chips" for receipts and none for others. It means
 	// your compiled circuit will always be only able to process up to 5 receipts and
 	// cannot process other types unless you change the allocations and recompile.
-	return 0, 3, 0
+	return 3, 0, 0
 }
 
 func toBoolean(val sdk.Uint248, api *sdk.CircuitAPI) bool {
@@ -73,19 +74,25 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	// In order to use the nice methods such as .Map() and .Reduce(), raw data needs
 	// to be wrapped in a DataStream. You could also use the raw data directly if you
 	// are familiar with writing gnark circuits.
-	storageSlots := sdk.NewDataStream(api, in.StorageSlots)
+	receipts := sdk.NewDataStream(api, in.Receipts)
 
-	sqrtPriceX96s := sdk.Map(storageSlots, func(storageSlot sdk.StorageSlot) sdk.Uint248 {
-		// 248 - 160 = 96
-		storageVal := api.ToUint248(storageSlot.Value)
+	// Main application logic: Run the assert function on each receipt. The function
+	// should return 1 if assertion successes and 0 otherwise
+	sdk.AssertEach(receipts, func(l sdk.Receipt) sdk.Uint248 {
+		assertionPassed := u248.And(
+			// Check that the contract address of each log field is the expected contract
+			u248.IsEqual(l.Fields[0].Contract, UsdcPoolAddress),
+			// Check the EventID of the fields are as expected
+			u248.IsEqual(l.Fields[0].EventID, EventIdSwap),
+			// Check the index of the fields are as expected
+			u248.IsZero(l.Fields[0].IsTopic),                     // `sqrtPriceX96` is not a topic field
+			u248.IsEqual(l.Fields[0].Index, sdk.ConstUint248(2)), // `sqrtPriceX96` is the index 2 data field in the `Swap` event
+		)
+		return assertionPassed
+	})
 
-		binary := api.Uint248.ToBinary(storageVal, 248)
-
-		sqrtPricePart := binary[0:159]
-
-		resultingSqrtPrice := api.Uint248.FromBinary(sqrtPricePart...)
-
-		return resultingSqrtPrice
+	sqrtPriceX96s := sdk.Map(receipts, func(receipt sdk.Receipt) sdk.Uint248 {
+		return api.ToUint248(receipt.Fields[0].Value)
 	})
 
 	// convert sqrtPriceX96 to price
@@ -98,7 +105,7 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	// countString := fmt.Sprintf("%d", sdk.Count(prices).Val)
 	// count, _ := strconv.Atoi(countString) // causing problems
 
-	count := len(in.StorageSlots.Toggles)
+	count := len(in.Receipts.Toggles)
 
 	shiftedList := make([]sdk.Uint248, 0)
 
