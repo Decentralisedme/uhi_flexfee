@@ -36,7 +36,7 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
     /////////////////
     // State Variables
     ///////////////
-    uint24 public constant BASE_FEE = 50; // 0.05%
+    uint24 public constant BASE_FEE = 200; // 2bps
 
     /// the commission on basis points that is paid to the hook to cover Brevis service costs
     uint24 public constant HOOK_COMMISSION = 100; // 0.01%
@@ -123,12 +123,9 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
 
     // Calculate Fee we will charge
     function calculateFee(uint256 volume) internal view returns (uint24) {
-        uint256 scaled_volume = volume / 150;
-        uint256 longterm_eth_volatility = 60;
-        uint256 scaled_vol = volatility / longterm_eth_volatility;
-        uint256 constant_factor = 2;
-        uint256 additionalFee = ((scaled_volume / 100000000000) * ((scaled_vol * 550) ** 2)) / 1e45;
-        return uint24(BASE_FEE + additionalFee);
+        uint256 constant_factor = 1e26;
+        uint256 variable_fee = sqrt(volume) * volatility/constant_factor;
+        return uint24(BASE_FEE + variable_fee);
     }
 
     function abs(int256 x) private pure returns (uint256) {
@@ -170,5 +167,19 @@ contract VolFeesHook is BaseHook, BrevisApp, Ownable {
 
     function setVkHash(bytes32 _vkHash) external onlyOwner {
         vkHash = _vkHash;
+    }
+
+    function sqrt(uint256 x) public pure returns (uint256) {
+        if (x == 0) return 0;
+
+        uint256 z = (x + 1) / 2;
+        uint256 y = x;
+
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+
+        return y;
     }
 }
