@@ -33,38 +33,8 @@ var UsdcPoolAddress = sdk.ConstUint248(
 var twoPower96 = sdk.ConstUint248("79228162514264337593543950336")
 
 func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
-	// Allocating regions for different source data. Here, we are allocating 5 data
-	// slots for "receipt" data, and none for other data types. Please note that if
-	// you allocate it this way and compile your circuit, the circuit structure will
-	// always have 5 processing "chips" for receipts and none for others. It means
-	// your compiled circuit will always be only able to process up to 5 receipts and
-	// cannot process other types unless you change the allocations and recompile.
+	// for unit tests use maxSlots = 3
 	return 0, 500, 0
-}
-
-func toBoolean(val sdk.Uint248, api *sdk.CircuitAPI) bool {
-	bin := api.Uint248.ToBinary(val, 1).Values()
-	var x = bin[0]
-	var sss = fmt.Sprintf("%v", x)
-
-	if sss == "0" {
-		return false
-	} else {
-		return true
-	}
-
-}
-
-func absDiff(api *sdk.CircuitAPI, a, b sdk.Uint248) sdk.Uint248 {
-	u248 := api.Uint248
-
-	aLessThanB := u248.IsLessThan(a, b)
-	cond := toBoolean(aLessThanB, api)
-
-	if cond {
-		return u248.Sub(b, a)
-	}
-	return u248.Sub(a, b)
 }
 
 func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
@@ -72,25 +42,16 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 
 	storageSlots := sdk.NewDataStream(api, in.StorageSlots)
 
-	sqrtPriceX96s := sdk.Map(storageSlots, func(storageSlot sdk.StorageSlot) sdk.Uint248 {
-		// 248 - 160 = 96
+	prices := sdk.Map(storageSlots, func(storageSlot sdk.StorageSlot) sdk.Uint248 {
 		storageVal := api.ToUint248(storageSlot.Value)
-
 		binary := api.Uint248.ToBinary(storageVal, 248)
-		
 		// bit-mask and get the first 160 bits (little-endian system)
 		sqrtPricePart := binary[0:159]
-
 		resultingSqrtPrice := api.Uint248.FromBinary(sqrtPricePart...)
-
 		bytess := api.Bytes32.FromBinary(sqrtPricePart...)
-
 		fmt.Println(resultingSqrtPrice, bytess)
-
 		return resultingSqrtPrice
 	})
-
-	prices := sqrtPriceX96s
 
 	fmt.Println("prices")
 	prices.Show()
@@ -118,28 +79,21 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	fmt.Println("shiftedList")
 	fmt.Println(shiftedList)
 
+	// constant scaling factors
+	tenTo10 := sdk.ConstUint248("10000000000")
+	tenTo20 := sdk.ConstUint248("100000000000000000000")
+	tenTo40 := sdk.ConstUint248("10000000000000000000000000000000000000000")
+
 	fmt.Println("============================ start")
 	returnsSquared := sdk.ZipMap2(lastRemovedPrice, shiftedList, func(a, b sdk.Uint248) sdk.Uint248 {
-
-		tenTo10 := sdk.ConstUint248("10000000000")
-		tenTo20 := sdk.ConstUint248("100000000000000000000")
-		tenTo40 := sdk.ConstUint248("10000000000000000000000000000000000000000")
-
 		fixed_ratio, _ := u248.Div(u248.Mul(tenTo10, a), b)
-		
 		fixed_ratioSquared := u248.Mul(fixed_ratio, fixed_ratio)
 		fixed_ratioQuad := u248.Mul(fixed_ratioSquared, fixed_ratioSquared)
-
 		aVal := fixed_ratioQuad
-
 		bVal := u248.Mul(u248.Mul(sdk.ConstUint248(2), tenTo20), fixed_ratioSquared)
-
 		cVal := tenTo40
-
 		result := u248.Sub(u248.Add(aVal, cVal), bVal)
-
 		return result
-
 	})
 	fmt.Println("============================ end")
 
@@ -147,13 +101,37 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	returnsSquared.Show()
 
 	varia, _ := u248.Div((sdk.Sum(returnsSquared)), sdk.ConstUint248(count))
-
-	outputToDo := u248.Sqrt(u248.Mul(varia, sdk.ConstUint248(2613400)))
+	outputVol := u248.Sqrt(u248.Mul(varia, sdk.ConstUint248(2613400)))
 
 	fmt.Println("outputVol:")
-	fmt.Println(outputToDo)
+	fmt.Println(outputVol)
 
-	api.OutputUint(248, outputToDo)
+	api.OutputUint(248, outputVol)
 
 	return nil
+}
+
+func toBoolean(val sdk.Uint248, api *sdk.CircuitAPI) bool {
+	bin := api.Uint248.ToBinary(val, 1).Values()
+	var x = bin[0]
+	var sss = fmt.Sprintf("%v", x)
+
+	if sss == "0" {
+		return false
+	} else {
+		return true
+	}
+
+}
+
+func absDiff(api *sdk.CircuitAPI, a, b sdk.Uint248) sdk.Uint248 {
+	u248 := api.Uint248
+
+	aLessThanB := u248.IsLessThan(a, b)
+	cond := toBoolean(aLessThanB, api)
+
+	if cond {
+		return u248.Sub(b, a)
+	}
+	return u248.Sub(a, b)
 }
