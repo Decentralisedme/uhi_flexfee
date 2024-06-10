@@ -39,7 +39,7 @@ func (c *AppCircuit) Allocate() (maxReceipts, maxSlots, maxTransactions int) {
 	// always have 5 processing "chips" for receipts and none for others. It means
 	// your compiled circuit will always be only able to process up to 5 receipts and
 	// cannot process other types unless you change the allocations and recompile.
-	return 0, 3, 0
+	return 0, 500, 0
 }
 
 func toBoolean(val sdk.Uint248, api *sdk.CircuitAPI) bool {
@@ -70,9 +70,6 @@ func absDiff(api *sdk.CircuitAPI, a, b sdk.Uint248) sdk.Uint248 {
 func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	u248 := api.Uint248
 
-	// In order to use the nice methods such as .Map() and .Reduce(), raw data needs
-	// to be wrapped in a DataStream. You could also use the raw data directly if you
-	// are familiar with writing gnark circuits.
 	storageSlots := sdk.NewDataStream(api, in.StorageSlots)
 
 	sqrtPriceX96s := sdk.Map(storageSlots, func(storageSlot sdk.StorageSlot) sdk.Uint248 {
@@ -80,23 +77,23 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 		storageVal := api.ToUint248(storageSlot.Value)
 
 		binary := api.Uint248.ToBinary(storageVal, 248)
-
+		
+		// bit-mask and get the first 160 bits (little-endian system)
 		sqrtPricePart := binary[0:159]
 
 		resultingSqrtPrice := api.Uint248.FromBinary(sqrtPricePart...)
 
+		bytess := api.Bytes32.FromBinary(sqrtPricePart...)
+
+		fmt.Println(resultingSqrtPrice, bytess)
+
 		return resultingSqrtPrice
 	})
 
-	// convert sqrtPriceX96 to price
-	// price = (sqrtPriceX96 / (2 ^ 96)) ^ 2
-	prices := sdk.Map(sqrtPriceX96s, func(sqrtPriceX96 sdk.Uint248) sdk.Uint248 {
-		i, _ := u248.Div(sqrtPriceX96, twoPower96)
-		return u248.Mul(i, i)
-	})
+	prices := sqrtPriceX96s
 
-	// countString := fmt.Sprintf("%d", sdk.Count(prices).Val)
-	// count, _ := strconv.Atoi(countString) // causing problems
+	fmt.Println("prices")
+	prices.Show()
 
 	count := len(in.StorageSlots.Toggles)
 
@@ -121,33 +118,42 @@ func (c *AppCircuit) Define(api *sdk.CircuitAPI, in sdk.DataInput) error {
 	fmt.Println("shiftedList")
 	fmt.Println(shiftedList)
 
-	returns := sdk.ZipMap2(lastRemovedPrice, shiftedList, func(a, b sdk.Uint248) sdk.Uint248 {
-		return absDiff(api, a, b)
+	fmt.Println("============================ start")
+	returnsSquared := sdk.ZipMap2(lastRemovedPrice, shiftedList, func(a, b sdk.Uint248) sdk.Uint248 {
+
+		tenTo10 := sdk.ConstUint248("10000000000")
+		tenTo20 := sdk.ConstUint248("100000000000000000000")
+		tenTo40 := sdk.ConstUint248("10000000000000000000000000000000000000000")
+
+		fixed_ratio, _ := u248.Div(u248.Mul(tenTo10, a), b)
+		
+		fixed_ratioSquared := u248.Mul(fixed_ratio, fixed_ratio)
+		fixed_ratioQuad := u248.Mul(fixed_ratioSquared, fixed_ratioSquared)
+
+		aVal := fixed_ratioQuad
+
+		bVal := u248.Mul(u248.Mul(sdk.ConstUint248(2), tenTo20), fixed_ratioSquared)
+
+		cVal := tenTo40
+
+		result := u248.Sub(u248.Add(aVal, cVal), bVal)
+
+		return result
+
 	})
+	fmt.Println("============================ end")
 
-	fmt.Println("returns:")
-	returns.Show()
+	fmt.Println("returnsSquared:")
+	returnsSquared.Show()
 
-	mean := sdk.Mean(returns)
+	varia, _ := u248.Div((sdk.Sum(returnsSquared)), sdk.ConstUint248(count))
 
-	sqrd_variance := sdk.Map(returns, func(_return sdk.Uint248) sdk.Uint248 {
-		variance := absDiff(api, _return, mean)
-		return u248.Mul(variance, variance)
-	})
+	outputToDo := u248.Sqrt(u248.Mul(varia, sdk.ConstUint248(2613400)))
 
-	sum_variance := sdk.Mean(sqrd_variance)
+	fmt.Println("outputVol:")
+	fmt.Println(outputToDo)
 
-	mean_var, _ := u248.Div(sum_variance, sdk.ConstUint248(len(in.Receipts.Toggles)-1))
-
-	vol := u248.Sqrt(mean_var)
-
-	// fmt.Println("vol price path:")
-	// fmt.Println(vol)
-
-	// Output will be reflected in app contract's callback in the form of
-	// _circuitOutput: abi.encodePacked(uint256,uint248,uint64,address)
-	// this variable Salt isn't used anywhere. it's just here to demonstrate how to output bytes32/uint256
-	api.OutputUint(248, vol)
+	api.OutputUint(248, outputToDo)
 
 	return nil
 }
